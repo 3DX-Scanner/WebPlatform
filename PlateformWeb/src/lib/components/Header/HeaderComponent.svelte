@@ -28,7 +28,7 @@
 <header class:scrolled={isScrolled}>
     <nav>
         <div class="logo">
-            <a href="/">Scanner3D</a>
+            <a href="/">3DX Scanner</a>
         </div>
         
         <!-- Menu mobile -->

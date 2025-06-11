@@ -6,7 +6,7 @@
 <footer>
     <div class="footer-content">
         <div class="footer-section">
-            <h3>Scanner3D</h3>
+            <h3>3DX Scanner</h3>
             <p>Votre solution de numérisation 3D professionnelle</p>
         </div>
         
@@ -40,6 +40,6 @@
     </div>
     
     <div class="footer-bottom">
-        <p>&copy; {currentYear} Scanner3D. Tous droits réservés.</p>
+        <p>&copy; {currentYear} 3DX Scanner. Tous droits réservés.</p>
     </div>
 </footer>

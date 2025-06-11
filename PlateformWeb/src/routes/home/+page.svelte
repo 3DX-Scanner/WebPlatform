@@ -139,7 +139,7 @@
     <section id="hero" class="hero-section" style="position: relative;">
         <div class="hero-content">
             <h1 class="hero-title">
-                <span class="gradient-text">Scanner 3D</span>
+                <span class="gradient-text">3DX Scanner</span>
                 <br>Professionnel
             </h1>
             <p class="hero-subtitle">
