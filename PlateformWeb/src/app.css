@@ -1,8 +1,98 @@
 @import url('https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap');
 
+:root {
+    /* Couleurs principales */
+    --color-primary: #1976d2;      
+    --color-primary-dark: #1565c0; 
+    --color-primary-light: #42a5f5;
+    
+    /* Couleurs secondaires */
+    --color-secondary: #424242;    
+    --color-secondary-light: #757575;
+    
+    /* Couleurs d'accent */
+    --color-accent: #ff4081;       
+    --color-accent-dark: #c60055;  
+    
+    /* Couleurs de fond */
+    --color-background: #ffffff;   
+    --color-background-alt: #f5f6fa;
+    
+    /* Couleurs de texte */
+    --color-text-primary: #000000; 
+    --color-text-secondary: #666666; 
+    --color-text-light: #ffffff;   
+    
+    /* Couleurs d'état */
+    --color-success: #4caf50;     
+    --color-error: #f44336;       
+    --color-warning: #ff9800;      
+    --color-info: #2196f3;       
+    
+    /* Couleurs de bordure */
+    --color-border: #e0e0e0;       
+    --color-border-dark: #bdbdbd;  
+    
+    /* Ombres */
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.1);
+    
+    /* Espacement */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-xxl: 3rem;
+    
+    /* Rayons de bordure */
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+}
+
+/* Styles de base */
 body {
-    font-family: 'Inter', Arial, sans-serif;
-    background: #f5f6fa;
     margin: 0;
     padding: 0;
-  }
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: var(--color-background-alt);
+    color: var(--color-text-primary);
+    line-height: 1.5;
+}
+
+/* Styles de liens */
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--color-primary-dark);
+}
+
+/* Styles de boutons */
+button {
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* Styles de focus */
+:focus {
+    outline: 2px solid var(--color-primary-light);
+    outline-offset: 2px;
+}
+
+/* Styles de sélection */
+::selection {
+    background-color: var(--color-primary-light);
+    color: var(--color-text-light);
+}

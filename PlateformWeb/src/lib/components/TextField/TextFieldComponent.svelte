@@ -1,6 +1,6 @@
 <script lang="ts">
     import './TextField.css';
-    // Props du composant
+    
     export let variant: 'outlined' | 'filled' | 'standard' = 'outlined';
     export let value: string = '';
     export let label: string = '';
