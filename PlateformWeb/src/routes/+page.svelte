@@ -1,25 +1,19 @@
 <script lang="ts">
+  import Button from '$lib/components/Button/ButtonComponent.svelte';
+  import Header from '$lib/components/Header/HeaderComponent.svelte';
+
   // TODO: Ajouter la logique de vérification de l'authentification
   let isAuthenticated = false;
+
+  function handleLogout() {
+    // TODO: Implémenter la logique de déconnexion
+    console.log('Déconnexion...');
+  }
 </script>
 
-<div class="container">
-  <header>
-    <nav>
-      <div class="logo">Scanner3D</div>
-      <div class="nav-links">
-        {#if isAuthenticated}
-          <a href="/dashboard" class="nav-link">Tableau de bord</a>
-          <a href="/profile" class="nav-link">Profil</a>
-          <button class="logout-btn">Déconnexion</button>
-        {:else}
-          <a href="/login" class="nav-link">Connexion</a>
-          <a href="/signup" class="nav-link signup">Inscription</a>
-        {/if}
-      </div>
-    </nav>
-  </header>
+<Header {isAuthenticated} />
 
+<div class="container">
   <main>
     <section class="hero">
       <div class="hero-content">
@@ -106,6 +100,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    padding-top: 60px; /* Ajout d'un padding pour compenser le header fixe */
   }
 
   header {

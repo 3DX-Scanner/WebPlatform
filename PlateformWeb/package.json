@@ -12,6 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
+		"@smui/textfield": "^8.0.0-beta.3",
+		"@smui/top-app-bar": "^8.0.0-beta.3",
 		"@sveltejs/adapter-auto": "^6.0.0",
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
@@ -24,6 +26,10 @@
 	},
 	"dependencies": {
 		"@prisma/client": "^6.9.0",
+		"@smui/floating-label": "^8.0.0-beta.3",
+		"@smui/line-ripple": "^8.0.0-beta.3",
+		"@smui/notched-outline": "^8.0.0-beta.3",
+		"@smui/ripple": "^8.0.0-beta.3",
 		"bcrypt": "^6.0.0",
 		"bcryptjs": "^3.0.2",
 		"emailjs": "^4.0.3",
