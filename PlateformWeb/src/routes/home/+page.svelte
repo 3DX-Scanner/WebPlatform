@@ -28,11 +28,15 @@
     // Configuration de la scène 3D
     function initThreeJS() {
         scene = new THREE.Scene();
+        // Fond transparent
+        // Pas de scene.background, le renderer est déjà en alpha
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(-10, 5, 30);
+        camera.lookAt(0, 5, 0);
         
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(container.offsetWidth, container.offsetHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setClearColor(0x000000, 0); // transparent
+        renderer.setSize(container.clientWidth, container.clientHeight);
         container.appendChild(renderer.domElement);
 
         // Contrôles de la caméra
@@ -55,57 +59,63 @@
         scene.add(pointLight);
 
         // Position de la caméra
-        camera.position.set(0, 0, 14);
-        camera.lookAt(0, 0, 0);
+        camera.position.set(-10, 5, 30);
+        camera.lookAt(0, 5, 0);
 
-        // Création d'un cube à la place de la sphère
-        const geometry = new THREE.BoxGeometry(8, 8, 8);
+        // Paramètres de la sphère
+        const radius = 24;
+        const widthSegments = 32;
+        const heightSegments = 16;
+
+        // Création de la géométrie de la sphère
+        const geometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
+
+        // Matériau en wireframe
         const material = new THREE.MeshBasicMaterial({
-            color: 0x1976d2,
+            color: 0x2194ce,
             wireframe: true
         });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
 
-        // Ajout d'un effet de particules
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 2000;
-        const posArray = new Float32Array(particlesCount * 3);
-        
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 12;
+        // Création du mesh
+        const sphere = new THREE.Mesh(geometry, material);
+        sphere.position.x = 0;
+        scene.add(sphere);
+
+        // Effet de neige
+        const snowCount = 200;
+        const snowGeometry = new THREE.BufferGeometry();
+        const snowPositions = new Float32Array(snowCount * 3);
+        for (let i = 0; i < snowCount; i++) {
+            snowPositions[i * 3] = (Math.random() - 0.5) * 80; // x
+            snowPositions[i * 3 + 1] = Math.random() * 60 + 10; // y (au-dessus de la sphère)
+            snowPositions[i * 3 + 2] = (Math.random() - 0.5) * 80; // z
         }
-        
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.02,
-            color: 0x1976d2,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending
-        });
-        
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
+        snowGeometry.setAttribute('position', new THREE.BufferAttribute(snowPositions, 3));
+        const snowMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8 });
+        const snow = new THREE.Points(snowGeometry, snowMaterial);
+        scene.add(snow);
 
         // Animation
         clock = new THREE.Clock();
         
         function animate() {
             requestAnimationFrame(animate);
-            
-            const delta = clock.getDelta();
             const time = clock.getElapsedTime();
-            
-            // Animation du cube (rotation sur les axes X et Y)
-            cube.rotation.y = time * 0.5;
-            cube.rotation.x = 0.15;
-            
-            // Animation des particules
-            particlesMesh.rotation.x = time * 0.1;
-            particlesMesh.rotation.y = time * 0.15;
-            
+            sphere.rotation.y = time * 0.5;
+            sphere.rotation.x = Math.sin(time * 0.3) * 0.2;
+
+            // Animation de la neige
+            const positions = snowGeometry.attributes.position.array;
+            for (let i = 0; i < snowCount; i++) {
+                positions[i * 3 + 1] -= 0.15; // vitesse de chute
+                if (positions[i * 3 + 1] < -10) {
+                    positions[i * 3 + 1] = Math.random() * 60 + 10; // replacer en haut
+                    positions[i * 3] = (Math.random() - 0.5) * 80;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 80;
+                }
+            }
+            snowGeometry.attributes.position.needsUpdate = true;
+
             controls.update();
             renderer.render(scene, camera);
         }
@@ -113,11 +123,8 @@
         animate();
 
         // Gestion du redimensionnement
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        camera.aspect = container.clientWidth / container.clientHeight;
+        renderer.setSize(container.clientWidth, container.clientHeight);
     }
 
     onMount(() => {
@@ -336,7 +343,7 @@ section + section {
 .hero-content {
     max-width: 600px;
     z-index: 1;
-    padding: 2rem;
+    padding: 6rem;
     width: 80%;
 }
 
@@ -372,6 +379,28 @@ section + section {
     width: 55%;
     height: 100%;
     z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background: transparent !important;
+    overflow: hidden;
+}
+.hero-3d canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    background: transparent !important;
+    margin-right: -50%;
+}
+
+.hero-3d::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 60px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--color-background-alt) 90%);
+    z-index: 2;
 }
 
 /* Section Fonctionnalités */
