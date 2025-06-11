@@ -1,4 +1,5 @@
 <script lang="ts">
+    import '../../app.css';
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
 
@@ -93,15 +94,19 @@
 form {
     display: flex;
     flex-direction: column;
-    gap: 1.2rem;
+    gap: 0.2rem;
 }
 
 .login-input {
     width: 100%;
 }
 
+form > :global(.mui-btn) {
+    margin-top: 1.2rem;
+}
+
 .login-btn {
-    margin-top: 1rem;
+    margin-top: 1.2rem;
     width: 100%;
     font-size: 1.1rem;
 }

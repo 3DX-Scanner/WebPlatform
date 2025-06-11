@@ -39,9 +39,9 @@
   min-height: 36px;
 }
 .mui-btn.raised.primary {
-  background: #4296ea;
+  background: #111;
   color: #fff;
-  box-shadow: 0 2px 4px rgba(66,150,234,0.15);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 .mui-btn.raised.secondary {
   background: #e0e0e0;
@@ -49,7 +49,7 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.10);
 }
 .mui-btn.raised.primary:hover {
-  background: #2176d2;
+  background: #000;
 }
 .mui-btn.raised.secondary:hover {
   background: #bdbdbd;
