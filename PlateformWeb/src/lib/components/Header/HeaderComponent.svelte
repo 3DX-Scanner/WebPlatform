@@ -39,8 +39,8 @@
         <!-- Navigation desktop -->
         <div class="nav-links" class:active={isMenuOpen}>
             <a href="/" class="nav-link">Accueil</a>
+            <a href="/models3D" class="nav-link">Nos modèles</a>
             {#if isAuthenticated}
-                <a href="/dashboard" class="nav-link">Tableau de bord</a>
                 <a href="/profile" class="nav-link">Profil</a>
                 <button class="nav-button" on:click={handleLogout}>Déconnexion</button>
             {:else}

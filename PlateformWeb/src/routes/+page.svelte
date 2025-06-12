@@ -8,7 +8,6 @@
 </script>
 
 <div class="loading">
-  Chargement...
 </div>
 
 <style>
