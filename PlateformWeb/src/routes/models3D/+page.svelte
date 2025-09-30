@@ -123,7 +123,11 @@
         }
     }
 
-    let viewerRef;
+    interface ThreeDViewerRef {
+        reload: () => void;
+    }
+    
+    let viewerRef: ThreeDViewerRef | undefined;
 
     function convertToPointCloud() {
         showPointCloud = true;
