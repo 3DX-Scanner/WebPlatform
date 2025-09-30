@@ -42,6 +42,22 @@ form {
 
 .login-input {
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+:global(.login-input .textfield-container) {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+:global(.login-input .input) {
+    width: calc(100% - 32px) !important;
+    max-width: calc(100% - 32px) !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 20px 16px !important;
 }
 
 form > :global(.mui-btn) {
@@ -90,4 +106,21 @@ form > :global(.mui-btn) {
 
 :global(.google-button) {
     margin-bottom: 1rem;
+}
+
+/* Désactiver le style d'autocomplétion jaune du navigateur */
+:global(.login-input input) {
+    background-color: transparent !important;
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+}
+
+:global(.login-input input:-webkit-autofill),
+:global(.login-input input:-webkit-autofill:hover),
+:global(.login-input input:-webkit-autofill:focus),
+:global(.login-input input:-webkit-autofill:active) {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: #333 !important;
+    background-color: transparent !important;
+    transition: background-color 5000s ease-in-out 0s !important;
 }

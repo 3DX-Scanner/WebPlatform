@@ -1,7 +1,7 @@
 .page-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 3rem 2rem;
+    padding: 3rem 4rem;
 }
 
 .page-title {
@@ -58,11 +58,73 @@
 
 .models-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 4rem;
-    padding: 2rem 0;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5rem;
+    padding: 2rem 1rem;
     margin: 0 auto;
-    max-width: 1400px;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Fixer la hauteur des cartes pour aligner les boutons */
+.models-grid :global(.card) {
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.models-grid :global(.card-content) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Fixer la hauteur de la zone de description - FORCER 2 LIGNES */
+.models-grid :global(.card-body) {
+    min-height: 60px !important;
+    height: 60px !important;
+    overflow: hidden !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    line-height: 1.5 !important;
+    font-size: 1rem !important;
+    color: var(--color-text-primary, #333) !important;
+}
+
+/* Fixer la hauteur de la zone subtitle pour uniformiser */
+.models-grid :global(.card-subtitle) {
+    height: 20px;
+    overflow: hidden;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.models-grid :global(.card-actions) {
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+}
+
+/* Responsive pour les écrans plus petits */
+@media (max-width: 1200px) {
+    .models-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .models-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .model-meta {
