@@ -3,23 +3,49 @@
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
+    import { signup } from '$lib/api';
+    import { goto } from '$app/navigation';
 
     let email = '';
     let password = '';
     let confirmPassword = '';
     let username = '';
     let error = '';
+    let isLoading = false;
 
     async function handleSubmit() {
+        if (!email || !password || !username) {
+            error = 'Veuillez remplir tous les champs';
+            return;
+        }
+
         if (password !== confirmPassword) {
             error = 'Les mots de passe ne correspondent pas';
             return;
         }
 
+        if (password.length < 6) {
+            error = 'Le mot de passe doit contenir au moins 6 caractères';
+            return;
+        }
+
+        isLoading = true;
+        error = '';
+
         try {
-            console.log('Signup attempt with:', { email, password, username });
+            const result = await signup(email, password, username);
+            
+            if (result.success) {
+                console.log('Inscription réussie:', result.user);
+                goto('/home');
+            } else {
+                error = result.error || 'Erreur lors de l\'inscription';
+            }
         } catch (e) {
             error = 'Erreur lors de l\'inscription';
+            console.error('Signup error:', e);
+        } finally {
+            isLoading = false;
         }
     }
 
@@ -82,8 +108,9 @@
                 color="primary"
                 variant="raised"
                 on:click={handleSubmit}
+                disabled={isLoading}
             >
-                S'inscrire
+                {isLoading ? 'Inscription...' : 'S\'inscrire'}
             </ButtonComponent>
         </form>
         <p class="form-link">

@@ -3,17 +3,37 @@
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
+    import { login } from '$lib/api';
+    import { goto } from '$app/navigation';
 
     let email = '';
     let password = '';
     let error = '';
-    let isAuthenticated = false;
+    let isLoading = false;
 
     async function handleSubmit() {
+        if (!email || !password) {
+            error = 'Veuillez remplir tous les champs';
+            return;
+        }
+
+        isLoading = true;
+        error = '';
+
         try {
-            console.log('Login attempt with:', { email, password });
+            const result = await login(email, password);
+            
+            if (result.success) {
+                console.log('Connexion réussie:', result.user);
+                goto('/home');
+            } else {
+                error = result.error || 'Erreur lors de la connexion';
+            }
         } catch (e) {
             error = 'Erreur lors de la connexion';
+            console.error('Login error:', e);
+        } finally {
+            isLoading = false;
         }
     }
 
@@ -61,8 +81,9 @@
                 color="primary"
                 variant="raised"
                 on:click={handleSubmit}
+                disabled={isLoading}
             >
-                Se connecter
+                {isLoading ? 'Connexion...' : 'Se connecter'}
             </ButtonComponent>
         </form>
         <p class="form-link">
