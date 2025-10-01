@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy, effect } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import * as THREE from 'three';
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -18,7 +18,7 @@
   let camera: THREE.PerspectiveCamera;
   let renderer: THREE.WebGLRenderer;
   let controls: OrbitControls;
-  let model: THREE.Group;
+  let model: THREE.Group | THREE.Points;
   let isLoading = true;
   let loadingProgress = 0;
   let isFullscreen = false;
@@ -90,10 +90,13 @@
     // Nettoyer la scène avant de charger un nouveau modèle
     if (model) {
       scene.remove(model);
-      if (model.geometry) model.geometry.dispose();
-      if (model.material) {
+      // Vérifier si c'est un Points (nuage de points) ou un Group (modèle GLB)
+      if ('geometry' in model && model.geometry) {
+        model.geometry.dispose();
+      }
+      if ('material' in model && model.material) {
         if (Array.isArray(model.material)) {
-          model.material.forEach(mat => mat.dispose());
+          model.material.forEach((mat: THREE.Material) => mat.dispose());
         } else {
           model.material.dispose();
         }
@@ -114,12 +117,10 @@
   }
 
   // Réactivité pour recharger quand showPointCloud change
-  effect(() => {
-    if (scene && controls) {
-      console.log('Effect triggered, showPointCloud changed to:', showPointCloud);
-      loadCurrentModel();
-    }
-  });
+  $: if (scene && controls && showPointCloud !== undefined) {
+    console.log('Reactive statement triggered, showPointCloud changed to:', showPointCloud);
+    loadCurrentModel();
+  }
 
   // Fonction pour charger le modèle GLB
   function loadGLBModel() {
