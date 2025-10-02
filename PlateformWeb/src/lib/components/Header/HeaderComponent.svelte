@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { isAuthenticated, user, logout } from '$lib/stores/auth';
+    import { goto } from '$app/navigation';
     import './Header.css';
     
-    export let isAuthenticated: boolean = false;
     let isMenuOpen = false;
     let isScrolled = false;
     
@@ -21,7 +22,8 @@
     }
     
     function handleLogout() {
-        console.log('Déconnexion...');
+        logout();
+        goto('/');
     }
 </script>
 
@@ -40,9 +42,8 @@
         <div class="nav-links" class:active={isMenuOpen}>
             <a href="/" class="nav-link">Accueil</a>
             <a href="/models3D" class="nav-link">Nos modèles</a>
-            {#if isAuthenticated}
-                <a href="/profile" class="nav-link">Profil</a>
-                <button class="nav-button" on:click={handleLogout}>Déconnexion</button>
+            {#if $isAuthenticated}
+                <a href="/profile" class="nav-link">Mon compte</a>
             {:else}
                 <a href="/login" class="nav-link">Connexion</a>
             {/if}

@@ -85,8 +85,8 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
   }
   .mui-btn.raised.secondary {
-    background: #e0e0e0;
-    color: #333;
+    background: #374151;
+    color: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.10);
   }
   .mui-btn.raised.primary:hover {
@@ -104,7 +104,9 @@
     transform: translateY(-2px) !important;
   }
   .mui-btn.raised.secondary:hover {
-    background: #bdbdbd;
+    background: #4b5563;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   .mui-btn.outlined.primary {
     background: transparent;

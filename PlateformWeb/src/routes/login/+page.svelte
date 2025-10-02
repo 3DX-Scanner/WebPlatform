@@ -5,6 +5,7 @@
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
     import { login } from '$lib/api';
     import { goto } from '$app/navigation';
+    import { user, isAuthenticated } from '$lib/stores/auth';
 
     let email = '';
     let password = '';
@@ -23,8 +24,11 @@
         try {
             const result = await login(email, password);
             
-            if (result.success) {
+            if (result.success && result.user) {
                 console.log('Connexion réussie:', result.user);
+                // Mettre à jour les stores d'authentification
+                user.set(result.user);
+                isAuthenticated.set(true);
                 goto('/home');
             } else {
                 error = result.error || 'Erreur lors de la connexion';

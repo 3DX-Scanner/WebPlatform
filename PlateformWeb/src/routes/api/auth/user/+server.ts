@@ -20,7 +20,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
       success: true,
       user: {
         id: user.id,
-        email: user.email
+        email: user.email,
+        name: user.name,
+        createdAt: user.createdAt
       }
     });
 

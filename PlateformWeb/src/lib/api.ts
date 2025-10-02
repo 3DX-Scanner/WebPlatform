@@ -26,13 +26,16 @@ export async function login(email: string, password: string): Promise<AuthRespon
 }
 
 // Inscription
-export async function signup(email: string, password: string, name?: string): Promise<AuthResponse> {
+export async function signup(email: string, password: string): Promise<AuthResponse> {
+  console.log('Signup function called with:', { email });
   const response = await fetch('/api/auth/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, name }),
+    body: JSON.stringify({ email, password }),
   });
-  return await response.json();
+  const result = await response.json();
+  console.log('Signup response:', result);
+  return result;
 }
 
 // Déconnexion

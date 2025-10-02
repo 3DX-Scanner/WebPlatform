@@ -3,6 +3,14 @@ import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import { verifyPassword, createSession } from '$lib/server/auth';
 
+interface UserWithName {
+  id: number;
+  email: string;
+  password: string | null;
+  name: string | null;
+  createdAt: Date;
+}
+
 export const POST: RequestHandler = async ({ request, cookies }) => {
   try {
     const { email, password } = await request.json();
@@ -13,7 +21,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
     const user = await prisma.user.findUnique({
       where: { email }
-    });
+    }) as UserWithName | null;
 
     if (!user || !user.password) {
       return json({ error: 'Email ou mot de passe incorrect' }, { status: 401 });
@@ -36,7 +44,12 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
     return json({
       success: true,
-      user: { id: user.id, email: user.email, createdAt: user.createdAt }
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name,
+        createdAt: user.createdAt 
+      }
     });
 
   } catch (error) {
