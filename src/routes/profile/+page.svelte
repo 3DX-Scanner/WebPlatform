@@ -52,11 +52,35 @@
 
     async function savePassword() {
         if (passwordError || !currentPassword || !newPassword || !confirmPassword) return;
-        // TODO: appeler l'API de changement de mot de passe lorsqu'elle sera prête
-        console.log('Change password', { currentPassword, newPassword });
-        editingPassword = false;
-        resetPasswordForm();
+
+        try {
+            const token = localStorage.getItem('token');
+
+            const res = await fetch('/api/resetPassword', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+                credentials: 'include'
+            });
+
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                passwordError = data.error || 'Erreur lors du changement de mot de passe.';
+                return;
+            }
+
+            console.log('✅ Mot de passe changé');
+            editingPassword = false;
+            resetPasswordForm();
+            alert('Mot de passe modifié avec succès !');
+        } catch (err) {
+            console.error(err);
+            passwordError = 'Erreur réseau.';
+        }
     }
+
 
     async function handleLogout() {
             try {
