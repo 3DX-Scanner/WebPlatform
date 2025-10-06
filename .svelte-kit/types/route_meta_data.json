@@ -1,0 +1,22 @@
+{
+	"/": [],
+	"/api/login": [
+		"src/routes/api/login/+server.ts"
+	],
+	"/api/logout": [
+		"src/routes/api/logout/+server.ts"
+	],
+	"/api/resetPassword": [
+		"src/routes/api/resetPassword/+server.ts"
+	],
+	"/api/signup": [
+		"src/routes/api/signup/+server.ts"
+	],
+	"/home": [],
+	"/login": [],
+	"/models3D": [],
+	"/profile": [
+		"src/routes/profile/+page.server.ts"
+	],
+	"/signup": []
+}
