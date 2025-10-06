@@ -17,11 +17,26 @@
         }
 
         try {
-            console.log('Signup attempt with:', { email, password, username });
+            const res = await fetch('/api/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, username })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                error = data.error || 'Erreur lors de l’inscription';
+                return;
+            }
+
+            alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+            window.location.href = '/login';
         } catch (e) {
-            error = 'Erreur lors de l\'inscription';
+            error = 'Erreur réseau ou serveur';
         }
     }
+
 
     async function handleGoogleSignup() {
         try {
