@@ -23,10 +23,6 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		const { currentPassword, newPassword, confirmPassword } = await request.json();
 
-		if (!currentPassword || !newPassword || !confirmPassword) {
-			return json({ error: 'Tous les champs sont requis.' }, { status: 400 });
-		}
-
 		if (newPassword !== confirmPassword) {
 			return json({ error: 'Les mots de passe ne correspondent pas.' }, { status: 400 });
 		}
