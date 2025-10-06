@@ -10,12 +10,26 @@
     let isAuthenticated = false;
 
     async function handleSubmit() {
+        error = '';
         try {
-            console.log('Login attempt with:', { email, password });
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.ok) {
+                isAuthenticated = true;
+                window.location.href = '/profile';
+            } else {
+                const data = await res.json();
+                error = data.message || 'Erreur lors de la connexion';
+            }
         } catch (e) {
-            error = 'Erreur lors de la connexion';
+            error = 'Erreur réseau';
         }
     }
+
 
     async function handleGoogleLogin() {
         try {
