@@ -1,4 +1,4 @@
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from '../../../../.svelte-kit/types/src/routes';
 import { redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals }) => {
