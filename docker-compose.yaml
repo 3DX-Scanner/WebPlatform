@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: postgres
+    hostname: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=webplatform
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+    ports:
+      - "5432:5432"
+    networks:
+      - prisma-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d admin"]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: postgres -c listen_addresses='*'
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  prisma-studio:
+    image: node:lts-alpine3.17
+    container_name: prisma-studio
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app
+    command: npx prisma studio --port 5555 --browser none
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env.prod
+    networks:
+      - prisma-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+#      server:
+#        condition: service_started
+
+networks:
+  prisma-network:
+
+volumes:
+  postgres_data:
