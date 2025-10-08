@@ -9,6 +9,7 @@
       username: string;
       email: string;
       createdAt: string;
+      hasPassword: boolean; // true = compte classique, false = Google OAuth
         };
     };
 
@@ -143,7 +144,17 @@
                     <h3 class="section-title">Sécurité du compte</h3>
                     <div class="section-content">
                         <div class="password-card">
-                            {#if !editingPassword}
+                            {#if !data.user.hasPassword}
+                                <!-- Utilisateur connecté via Google OAuth -->
+                                <div class="google-auth-notice">
+                                    <div class="notice-icon">🔒</div>
+                                    <div class="notice-content">
+                                        <h4>Authentification Google</h4>
+                                        <p>Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
+                                        <p class="notice-hint">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
+                                    </div>
+                                </div>
+                            {:else if !editingPassword}
                                 <div class="inline-field">
                                     <span class="inline-label">Mot de passe</span>
                                     <ButtonComponent color="primary" variant="raised" onClick={() => { editingPassword = true; }}>
@@ -276,7 +287,6 @@
     .wrapper section { background: transparent !important; box-shadow: none !important; border: none !important; padding: 0; border-radius: 0; }
     .section-title { margin: 0 0 32px 0; color: #111827; text-align: center; font-size: 2rem; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .field { display: flex; flex-direction: column; gap: 6px; }
     /* inputs/labels gérés par TextFieldComponent */
     @media (max-width: 900px) { .form-grid { grid-template-columns: 1fr; } }
     
@@ -310,6 +320,41 @@
     .plan-btn[disabled] { background: #9ca3af; color: #111827; cursor: default; }
     @media (max-width: 900px) { .plans { grid-template-columns: 1fr; } }
 
+    /* Style pour le message Google OAuth */
+    .google-auth-notice {
+        display: flex;
+        gap: 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 20px;
+        color: white;
+        align-items: flex-start;
+    }
+    .notice-icon {
+        font-size: 2rem;
+        flex-shrink: 0;
+    }
+    .notice-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .notice-content h4 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: white;
+    }
+    .notice-content p {
+        margin: 0;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.95);
+    }
+    .notice-hint {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.85);
+        font-style: italic;
+    }
 
     @media (max-width: 900px) {
         .layout { grid-template-columns: 1fr; }

@@ -3,8 +3,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET!;
+import { JWT_SECRET } from '$env/static/private';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
@@ -33,11 +32,18 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		const user = await prisma.user.findUnique({
 			where: { id: payload.id },
-			select: { password: true }
+			select: { password: true, email: true }
 		});
 
-		if (!user || !user.password) {
+		if (!user) {
 			return json({ error: 'Utilisateur introuvable.' }, { status: 404 });
+		}
+
+		// Bloquer le changement de mot de passe pour les utilisateurs Google OAuth
+		if (user.password === '') {
+			return json({ 
+				error: 'Impossible de changer le mot de passe. Votre compte est géré par Google OAuth.' 
+			}, { status: 403 });
 		}
 
 		const isValid = await bcrypt.compare(currentPassword, user.password);
