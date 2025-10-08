@@ -9,12 +9,14 @@
     let confirmPassword = '';
     let username = '';
     let error = '';
-
+    
     async function handleSubmit() {
         if (password !== confirmPassword) {
             error = 'Les mots de passe ne correspondent pas';
             return;
         }
+
+        error = '';
 
         try {
             const res = await fetch('/api/signup', {
@@ -30,12 +32,12 @@
                 return;
             }
 
-            alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-            window.location.href = '/login';
+            window.location.href = '/profile';
         } catch (e) {
             error = 'Erreur réseau ou serveur';
         }
     }
+
 
 
     async function handleGoogleSignup() {
