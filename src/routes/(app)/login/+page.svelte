@@ -3,11 +3,35 @@
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
+    import { onMount } from 'svelte';
 
     let email = '';
     let password = '';
     let error = '';
     let isAuthenticated = false;
+
+    // Gérer les erreurs OAuth dans l'URL
+    onMount(() => {
+        const params = new URLSearchParams(window.location.search);
+        const errorParam = params.get('error');
+        
+        // Seulement afficher les erreurs réelles
+        if (errorParam) {
+            const errorMessages: Record<string, string> = {
+                'access_denied': 'Vous avez refusé l\'accès à Google',
+                'no_code': 'Code d\'autorisation manquant',
+                'token_exchange_failed': 'Échec de l\'échange de token',
+                'user_info_failed': 'Impossible de récupérer vos informations',
+                'email_not_verified': 'Votre email Google n\'est pas vérifié',
+                'auth_failed': 'Erreur lors de l\'authentification Google'
+            };
+            
+            error = errorMessages[errorParam] || 'Erreur d\'authentification';
+            
+            // Nettoyer l'URL
+            window.history.replaceState({}, document.title, '/login');
+        }
+    });
 
     async function handleSubmit() {
         error = '';
@@ -33,8 +57,8 @@
 
     async function handleGoogleLogin() {
         try {
-            // TODO: Implémenter la connexion Google
-            console.log('Google login attempt');
+            // Rediriger vers l'endpoint Google OAuth
+            window.location.href = '/api/auth/google';
         } catch (e) {
             error = 'Erreur lors de la connexion avec Google';
         }

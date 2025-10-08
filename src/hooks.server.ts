@@ -1,15 +1,16 @@
 import type { Handle } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '$env/static/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get('jwt');
 
 	if (token) {
 		try {
-			const user = jwt.verify(token, process.env.JWT_SECRET as string) as { id: number; email: string };
+			const user = jwt.verify(token, JWT_SECRET) as { id: number; email: string; username: string; createdAt: Date };
 			event.locals.user = user;
 		} catch (err) {
-			console.warn('JWT invalide');
+			console.warn('⚠️ JWT invalide:', err instanceof Error ? err.message : err);
 			event.locals.user = undefined;
 		}
 	} else {
