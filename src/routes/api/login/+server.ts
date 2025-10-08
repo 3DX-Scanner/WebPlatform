@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '$env/static/private';
 
 interface LoginRequest {
 	email: string;
@@ -31,15 +32,15 @@ export async function POST({ request, cookies }) {
 		// 🎟️ Génération du JWT
 		const token = jwt.sign(
 		{ id: user.id, email: user.email, username: user.username, createdAt: user.createdAt },
-		process.env.JWT_SECRET as string,
+		JWT_SECRET,
 		{ expiresIn: '1h' }
 		);
 
 		// 🍪 Enregistrement du token dans un cookie HTTP-only
 		cookies.set('jwt', token, {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'strict',
+			secure: false, // En dev, mettre à true en production
+			sameSite: 'lax',
 			path: '/',
 			maxAge: 60 * 60 // 1 heure
 		});
