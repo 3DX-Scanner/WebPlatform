@@ -12,10 +12,16 @@ export async function POST({ request }) {
 			return json({ error: 'Tous les champs sont obligatoires' }, { status: 400 });
 		}
 
-		// Vérifier si l'utilisateur existe déjà
-		const existingUser = await prisma.user.findUnique({ where: { email } });
-		if (existingUser) {
+		// Vérifier si l'email est déjà utilisé
+		const existingEmai = await prisma.user.findUnique({ where: { email } });
+		if (existingEmai) {
 			return json({ error: 'Cet email est déjà utilisé' }, { status: 409 });
+		}
+
+		// Vérifier si le nom d'utilisateur est déjà utilisé
+		const existingUsername = await prisma.user.findUnique({ where: { username } });
+		if (existingUsername) {
+			return json({ error: 'Ce nom d\'utilisateur est déjà utilisé' }, { status: 409 });
 		}
 
 		// Hash du mot de passe
