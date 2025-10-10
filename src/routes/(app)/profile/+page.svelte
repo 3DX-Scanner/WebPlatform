@@ -55,9 +55,7 @@
         if (passwordError || !currentPassword || !newPassword || !confirmPassword) return;
 
         try {
-            const token = localStorage.getItem('token');
-
-            const res = await fetch('/api/resetPassword', {
+            const res = await fetch('/api/change-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),

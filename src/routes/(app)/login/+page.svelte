@@ -95,6 +95,9 @@
                 required={true}
                 classe="login-input"
             />
+            <div class="forgot-password-link">
+            <a href="/forgotPassword">Mot de passe oublié ?</a>
+            </div>
             <ButtonComponent
                 color="primary"
                 variant="raised"
