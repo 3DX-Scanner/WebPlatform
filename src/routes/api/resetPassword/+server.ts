@@ -2,21 +2,13 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '$env/static/private';
+import { verifyJwtFromCookies } from '$lib/server/jwtVerify';
+
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
-		let token = cookies.get('jwt');
-
-		if (!token) {
-			return json({ error: 'Jeton manquant' }, { status: 401 });
-		}
-
-		let payload: any;
-		try {
-			payload = jwt.verify(token, JWT_SECRET);
-		} catch (err) {
+		const payload = verifyJwtFromCookies(cookies);
+		if (!payload) {
 			return json({ error: 'Jeton invalide ou expiré' }, { status: 401 });
 		}
 
