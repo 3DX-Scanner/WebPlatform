@@ -1,7 +1,9 @@
 <script lang="ts">
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
     import { goto } from '$app/navigation';
+    import { onMount, tick } from 'svelte';
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
+    import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
 
     export let data: {
     user: {
@@ -9,7 +11,7 @@
       username: string;
       email: string;
       createdAt: string;
-      hasPassword: boolean; // true = compte classique, false = Google OAuth
+      hasPassword: boolean;
         };
     };
 
@@ -18,6 +20,7 @@
     let theme: 'light' | 'dark' = 'light';
     // Sécurité - changement de mot de passe
     let editingPassword = false;
+    let showPwdModal = false;
     let currentPassword = '';
     let newPassword = '';
     let confirmPassword = '';
@@ -25,15 +28,22 @@
     let leftCardEl: HTMLDivElement;
     let rightCardEl: HTMLDivElement;
 
-    function syncHeights() {
+    async function syncHeights() {
         if (!leftCardEl || !rightCardEl) return;
+        await tick();
         const h = leftCardEl.offsetHeight;
-        const padding = 57;
-        const target = Math.max(300, h - padding);
+        const target = Math.max(320, h);
         rightCardEl.style.height = target + 'px';
     }
 
     $: selectedSection, syncHeights();
+
+    onMount(() => {
+        syncHeights();
+        const onResize = () => syncHeights();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    });
 
     function validatePasswords() {
         passwordError = '';
@@ -70,7 +80,7 @@
                 return;
             }
 
-            console.log('✅ Mot de passe changé');
+            console.log('Mot de passe changé');
             editingPassword = false;
             resetPasswordForm();
             alert('Mot de passe modifié avec succès !');
@@ -95,157 +105,157 @@
         }
 </script>
 
-<div class="profile-shell">
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="card glass profile" bind:this={leftCardEl}>
-                <div class="avatar-xl">{data.user.email.charAt(0).toUpperCase()}</div>
-                <div class="name">{data.user.username}</div>
-                <div class="email">{data.user.email || 'Connecté via Google'}</div>
-                <div class="badge">Membre depuis {new Date(data.user.createdAt).toLocaleDateString('fr-FR')}</div>
+<div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4">
+    <div class="w-full max-w-6xl mx-auto grid gap-5 grid-cols-[340px_1fr] items-stretch">
+        <aside>
+            <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full" bind:this={leftCardEl}>
+                <div class="w-24 h-24 rounded-full grid place-items-center bg-gray-700 text-white text-2xl font-bold">{data.user.email.charAt(0).toUpperCase()}</div>
+                <div class="font-extrabold text-gray-900 text-lg">{data.user.username}</div>
+                <div class="text-gray-500 text-base">{data.user.email || 'Connecté via Google'}</div>
+                <div class="mt-1 bg-emerald-100 text-emerald-700 px-3 py-2 rounded-full text-sm">Membre depuis {new Date(data.user.createdAt).toLocaleDateString('fr-FR')}</div>
 
-                <ul class="side-list" role="tablist">
-                    <li class="blue" class:active={selectedSection==='securite'}>
-                        <button type="button" role="tab" aria-selected={selectedSection==='securite'} on:click={() => selectedSection='securite'}>
-                            <i class="dot"></i><span>Sécurité du compte</span>
+                <ul class="w-full grid gap-3 mt-4" role="tablist">
+                    <li>
+                        <button type="button" role="tab" class:bg-indigo-50={selectedSection==='securite'} class="w-full text-left rounded-xl bg-slate-50 hover:bg-slate-100 px-4 py-3 font-semibold text-gray-800" aria-selected={selectedSection==='securite'} onclick={() => selectedSection='securite'}>
+                            Sécurité du compte
                         </button>
                     </li>
-                    <li class="green" class:active={selectedSection==='preferences'}>
-                        <button type="button" role="tab" aria-selected={selectedSection==='preferences'} on:click={() => selectedSection='preferences'}>
-                            <i class="dot"></i><span>Préférences</span>
+                    <li>
+                        <button type="button" role="tab" class:bg-indigo-50={selectedSection==='preferences'} class="w-full text-left rounded-xl bg-slate-50 hover:bg-slate-100 px-4 py-3 font-semibold text-gray-800" aria-selected={selectedSection==='preferences'} onclick={() => selectedSection='preferences'}>
+                            Préférences
                         </button>
                     </li>
-                    <li class="purple" class:active={selectedSection==='modeles'}>
-                        <button type="button" role="tab" aria-selected={selectedSection==='modeles'} on:click={() => selectedSection='modeles'}>
-                            <i class="dot"></i><span>Mes modèles</span>
+                    <li>
+                        <button type="button" role="tab" class:bg-indigo-50={selectedSection==='modeles'} class="w-full text-left rounded-xl bg-slate-50 hover:bg-slate-100 px-4 py-3 font-semibold text-gray-800" aria-selected={selectedSection==='modeles'} onclick={() => selectedSection='modeles'}>
+                            Mes modèles
                         </button>
                     </li>
-                    <li class="yellow" class:active={selectedSection==='abonnement'}>
-                        <button type="button" role="tab" aria-selected={selectedSection==='abonnement'} on:click={() => selectedSection='abonnement'}>
-                            <i class="dot"></i><span>Abonnement</span>
+                    <li>
+                        <button type="button" role="tab" class:bg-indigo-50={selectedSection==='abonnement'} class="w-full text-left rounded-xl bg-slate-50 hover:bg-slate-100 px-4 py-3 font-semibold text-gray-800" aria-selected={selectedSection==='abonnement'} onclick={() => selectedSection='abonnement'}>
+                            Abonnement
                         </button>
                     </li>
                 </ul>
                 
-                <div class="logout-section">
-                    <ButtonComponent color="primary" variant="raised" onClick={handleLogout}>
+                <div class="mt-5 flex justify-center">
+                    <ButtonComponent color="primary" variant="raised" href="" onClick={handleLogout}>
                         Se déconnecter
                     </ButtonComponent>
                 </div>
     </div>
         </aside>
 
-        <main class="content">
-            <div class="card wrapper" bind:this={rightCardEl}>
+        <main>
+            <div class="bg-white rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
             {#if selectedSection==='securite'}
-                <section class="section">
-                    <h3 class="section-title">Sécurité du compte</h3>
-                    <div class="section-content">
-                        <div class="password-card">
+                <section class="mb-4">
+                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Sécurité du compte</h3>
+                    <div class="flex flex-col items-center gap-5">
+                        <div class="grid gap-3 w-full max-w-[500px]">
                             {#if !data.user.hasPassword}
                                 <!-- Utilisateur connecté via Google OAuth -->
-                                <div class="google-auth-notice">
-                                    <div class="notice-icon">🔒</div>
-                                    <div class="notice-content">
-                                        <h4>Authentification Google</h4>
-                                        <p>Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
-                                        <p class="notice-hint">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
+                                <div class="flex gap-4 bg-gradient-to-r from-indigo-400 to-purple-600 rounded-xl p-5 text-white items-start">
+                                    <div class="text-2xl">🔒</div>
+                                    <div class="flex flex-col gap-2">
+                                        <h4 class="m-0 text-white text-lg font-bold">Authentification Google</h4>
+                                        <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
+                                        <p class="m-0 text-white/85 italic">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
                                     </div>
                                 </div>
                             {:else if !editingPassword}
-                                <div class="inline-field">
-                                    <span class="inline-label">Mot de passe</span>
-                                    <ButtonComponent color="primary" variant="raised" onClick={() => { editingPassword = true; }}>
+                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                    <span class="font-bold text-gray-700">Mot de passe</span>
+                                    <ButtonComponent color="primary" variant="raised" classe="w-64" href="" onClick={() => { showPwdModal = true; }}>
                                         Changer le mot de passe
                                     </ButtonComponent>
                                 </div>
                             {:else}
-                                <div class="edit-password">
-                                    <div class="inline-field">
-                                        <span class="inline-label">Mot de passe actuel</span>
+                                <div class="grid gap-3">
+                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                        <span class="font-bold text-gray-700">Mot de passe actuel</span>
                                         <TextFieldComponent label="" classe="nolabel" type="password" bind:value={currentPassword} />
                                     </div>
-                                    <div class="inline-field">
-                                        <span class="inline-label">Nouveau mot de passe</span>
+                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                        <span class="font-bold text-gray-700">Nouveau mot de passe</span>
                                         <TextFieldComponent label="" classe="nolabel" type="password" bind:value={newPassword} />
                                     </div>
-                                    <div class="inline-field">
-                                        <span class="inline-label">Confirmer le mot de passe</span>
+                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                        <span class="font-bold text-gray-700">Confirmer le mot de passe</span>
                                         <TextFieldComponent label="" classe="nolabel" type="password" bind:value={confirmPassword} />
                                     </div>
                                     {#if passwordError}
-                                        <div class="error-inline">{passwordError}</div>
+                                        <div class="text-red-600 font-semibold">{passwordError}</div>
                                     {/if}
-                                    <div class="actions-inline">
-                                        <ButtonComponent color="primary" variant="raised" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
+                                    <div class="flex gap-3 items-center">
+                                        <ButtonComponent color="primary" variant="raised" href="" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
                                             Enregistrer
                                         </ButtonComponent>
-                                        <ButtonComponent color="secondary" variant="outlined" onClick={() => { editingPassword = false; resetPasswordForm(); }}>
+                                        <ButtonComponent color="secondary" variant="outlined" href="" onClick={() => { editingPassword = false; resetPasswordForm(); }}>
                                             Annuler
                                         </ButtonComponent>
                                     </div>
                                 </div>
                             {/if}
                         </div>
-                        <div class="form-grid">
-                            <div class="inline-field">
-                                <span class="inline-label">Double authentification</span>
-                                <input type="text" value="Désactivée" disabled class="auth-input" />
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[500px]">
+                            <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                <span class="font-bold text-gray-700">Double authentification</span>
+                                <input type="text" value="Désactivée" disabled class="border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-500" />
                             </div>
                         </div>
                     </div>
                 </section>
             {:else if selectedSection==='preferences'}
-                <section class="section">
-                    <h3 class="section-title">Préférences</h3>
-                    <div class="prefs">
-                        <div class="inline-field">
-                            <span class="inline-label">Langue</span>
+                <section class="mb-4">
+                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Préférences</h3>
+                    <div class="grid gap-4">
+                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                            <span class="font-bold text-gray-700">Langue</span>
                             <select id="lang-select" bind:value={language}>
                                 <option value="fr">Français</option>
                                 <option value="en">English</option>
                             </select>
                         </div>
-                        <div class="inline-field">
-                            <span class="inline-label">Thème</span>
-                            <div class="theme-toggle" role="tablist" aria-label="Theme">
-                                <button type="button" role="tab" class:active={theme==='light'} on:click={() => theme='light'} aria-selected={theme==='light'}>
-                                    <span class="icon">☀️</span> Clair
+                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                            <span class="font-bold text-gray-700">Thème</span>
+                            <div class="inline-flex gap-2 bg-gray-100 p-1.5 rounded-lg" role="tablist" aria-label="Theme">
+                                <button type="button" role="tab" class:bg-white={theme==='light'} class="px-3 py-2 rounded-md font-semibold text-gray-800" onclick={() => theme='light'} aria-selected={theme==='light'}>
+                                    <span class="mr-1">☀️</span> Clair
                                 </button>
-                                <button type="button" role="tab" class:active={theme==='dark'} on:click={() => theme='dark'} aria-selected={theme==='dark'}>
-                                    <span class="icon">🌙</span> Sombre
+                                <button type="button" role="tab" class:bg-white={theme==='dark'} class="px-3 py-2 rounded-md font-semibold text-gray-800" onclick={() => theme='dark'} aria-selected={theme==='dark'}>
+                                    <span class="mr-1">🌙</span> Sombre
                                 </button>
                     </div>
                 </div>
             </div>
                 </section>
             {:else if selectedSection==='modeles'}
-                <section class="section">
-                    <h3 class="section-title">Mes modèles</h3>
-                    <div class="empty-state">
-                        <p class="empty-message">Vous n'avez aucun modèle pour le moment</p>
-                        <p class="muted">Ouvrez la galerie des modèles 3D.</p>
-                        <a class="button-outline" href="/models3D">Voir les modèles</a>
+                <section class="mb-4">
+                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Mes modèles</h3>
+                    <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
+                        <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
+                        <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
+                        <a class="border rounded-md px-3 py-2 text-blue-600 border-blue-300" href="/models3D">Voir les modèles</a>
                     </div>
                 </section>
             {:else}
-                <section class="section">
-                    <h3 class="section-title">Abonnement</h3>
-                    <div class="plans">
-                        <div class="plan-card">
+                <section class="mb-4">
+                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Abonnement</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-900 text-gray-200 rounded-xl p-4 grid gap-2">
                             <h4>Free Plan</h4>
-                            <p class="muted">Accès limité aux fonctionnalités.</p>
-                            <button type="button" class="plan-btn" disabled>Actuel</button>
+                            <p class="text-gray-400">Accès limité aux fonctionnalités.</p>
+                            <button type="button" class="bg-blue-400 text-gray-900 px-3 py-2 rounded-md font-semibold" disabled>Actuel</button>
                         </div>
-                        <div class="plan-card">
+                        <div class="bg-gray-900 text-gray-200 rounded-xl p-4 grid gap-2">
                             <h4>Pro</h4>
-                            <p class="muted">Limites étendues et plus de confort.</p>
-                            <button type="button" class="plan-btn">Passer en Pro</button>
+                            <p class="text-gray-400">Limites étendues et plus de confort.</p>
+                            <button type="button" class="bg-blue-400 text-gray-900 px-3 py-2 rounded-md font-semibold">Passer en Pro</button>
                         </div>
-                        <div class="plan-card">
+                        <div class="bg-gray-900 text-gray-200 rounded-xl p-4 grid gap-2">
                             <h4>Ultra</h4>
-                            <p class="muted">Limites très élevées et accès anticipé.</p>
-                            <button type="button" class="plan-btn">Passer en Ultra</button>
+                            <p class="text-gray-400">Limites très élevées et accès anticipé.</p>
+                            <button type="button" class="bg-blue-400 text-gray-900 px-3 py-2 rounded-md font-semibold">Passer en Ultra</button>
                     </div>
                     </div>
                 </section>
@@ -255,106 +265,6 @@
         </div>
 </div>
 
-<style>
-    .profile-shell { background: transparent; padding: 32px 16px; min-height: calc(100vh - 64px); display: flex; align-items: center; justify-content: center; }
-    .layout { max-width: 1200px; width: 100%; margin: 0 auto; display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+<ChangePasswordModal isOpen={showPwdModal} onclose={() => showPwdModal = false} onsaved={() => { showPwdModal = false; }} />
 
-    .card { background: #ffffff; border-radius: 16px; box-shadow: 0 14px 40px rgba(16,24,40,.06); padding: 28px; }
-    .wrapper { padding: 28px; overflow: auto; }
-    .glass { background: rgba(255,255,255,.9); backdrop-filter: blur(8px); }
-
-    .sidebar .profile { display: grid; place-items: center; gap: 10px; padding: 28px; }
-    .avatar-xl { width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; background: #374151; color:#fff; font-size: 2rem; font-weight: 700; }
-    .name { font-weight: 800; color: #111827; font-size: 1.1rem; }
-    .email { color: #6b7280; font-size: 1rem; }
-    .badge { margin-top: 6px; background: #e5f6ee; color: #177245; padding: 8px 12px; border-radius: 999px; font-size: .85rem; }
-
-    .side-list { list-style: none; margin: 16px 0 0 0; padding: 0; display: grid; gap: 12px; width: 100%; }
-    .side-list li { display: flex; align-items: stretch; border-radius: 12px; width: 100%; overflow: hidden; }
-    .side-list li > button { display:flex; align-items:center; gap:12px; padding:14px 14px; background:#f8fafc; border:none; width:100%; text-align:left; cursor:pointer; transition: background .15s; font-size: 1rem; color:#1f2937; font-weight:600; }
-    .side-list li.active > button { background: #eef2ff; }
-    .side-list li .dot { display:none; }
-    .side-list li span { color:#1f2937; font-weight: 600; }
-
-    .logout-section { margin-top: 20px; display: flex; justify-content: center; }
-
-    /* cleaned decorative styles */
-    /* .plain removed */
-    .section { margin-bottom: 16px; background: transparent; }
-    /* Force removal of any global gray background applied to <section> */
-    .wrapper section { background: transparent !important; box-shadow: none !important; border: none !important; padding: 0; border-radius: 0; }
-    .section-title { margin: 0 0 32px 0; color: #111827; text-align: center; font-size: 2rem; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    /* inputs/labels gérés par TextFieldComponent */
-    @media (max-width: 900px) { .form-grid { grid-template-columns: 1fr; } }
-    
-    .prefs { display: grid; gap: 16px; }
-    .prefs select { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; background: #fff; color: #111827; }
-    
-    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px; min-height: 200px; }
-    .empty-message { font-size: 1.1rem; font-weight: 600; color: #6b7280; margin: 0; }
-    .theme-toggle { display: inline-flex; gap: 8px; background: #f3f4f6; padding: 6px; border-radius: 10px; }
-    .theme-toggle button { border: none; background: transparent; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; color: #1f2937; }
-    .theme-toggle button.active { background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-    .theme-toggle .icon { margin-right: 6px; }
-
-    .section-content { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-    .password-card { display: grid; gap: 12px; width: 100%; max-width: 500px; }
-    .form-grid { width: 100%; max-width: 500px; }
-    /* cleaned old button helpers */
-    .actions-inline { display: flex; gap: 10px; align-items: center; }
-    .error-inline { color: #dc2626; font-weight: 600; }
-    .inline-field { display: grid; grid-template-columns: 220px 1fr; gap: 12px; align-items: center; margin-bottom: 10px; }
-    .inline-field :global(button) { width: fit-content; }
-    .inline-label { font-weight: 700; color: #374151; }
-    .auth-input { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; background: #f9fafb; color: #6b7280; font-size: 1rem; }
-    .edit-password { display: grid; gap: 12px; }
-    :global(.nolabel) :global(.label) { display: none; }
-
-    .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .plan-card { background: #111827; color: #e5e7eb; border-radius: 12px; padding: 16px; display: grid; gap: 10px; }
-    .plan-card h4 { color: #ffffff; margin: 0; }
-    .plan-btn { align-self: start; background: #60a5fa; color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-    .plan-btn[disabled] { background: #9ca3af; color: #111827; cursor: default; }
-    @media (max-width: 900px) { .plans { grid-template-columns: 1fr; } }
-
-    /* Style pour le message Google OAuth */
-    .google-auth-notice {
-        display: flex;
-        gap: 16px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        padding: 20px;
-        color: white;
-        align-items: flex-start;
-    }
-    .notice-icon {
-        font-size: 2rem;
-        flex-shrink: 0;
-    }
-    .notice-content {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    .notice-content h4 {
-        margin: 0;
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: white;
-    }
-    .notice-content p {
-        margin: 0;
-        line-height: 1.5;
-        color: rgba(255, 255, 255, 0.95);
-    }
-    .notice-hint {
-        font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.85);
-        font-style: italic;
-    }
-
-    @media (max-width: 900px) {
-        .layout { grid-template-columns: 1fr; }
-    }
-</style>
+<style></style>

@@ -13,7 +13,7 @@ services:
     networks:
       - prisma-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d admin"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d webplatform"]
       interval: 5s
       timeout: 2s
       retries: 20
@@ -41,11 +41,27 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-#      server:
-#        condition: service_started
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    hostname: minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin12345
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000" 
+      - "9001:9001" 
+    command: server /data --console-address ":9001"
+    networks:
+      - prisma-network
 
 networks:
   prisma-network:
 
 volumes:
   postgres_data:
+  minio_data:

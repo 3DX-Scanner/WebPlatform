@@ -1,21 +1,19 @@
 <script lang="ts">
-    import './login.css';
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
     import { onMount } from 'svelte';
+    import { goto, invalidate } from '$app/navigation';
 
     let email = '';
     let password = '';
     let error = '';
     let isAuthenticated = false;
 
-    // Gérer les erreurs OAuth dans l'URL
     onMount(() => {
         const params = new URLSearchParams(window.location.search);
         const errorParam = params.get('error');
         
-        // Seulement afficher les erreurs réelles
         if (errorParam) {
             const errorMessages: Record<string, string> = {
                 'access_denied': 'Vous avez refusé l\'accès à Google',
@@ -27,8 +25,6 @@
             };
             
             error = errorMessages[errorParam] || 'Erreur d\'authentification';
-            
-            // Nettoyer l'URL
             window.history.replaceState({}, document.title, '/login');
         }
     });
@@ -44,7 +40,8 @@
 
             if (res.ok) {
                 isAuthenticated = true;
-                window.location.href = '/profile';
+                await invalidate('auth:session');
+                await goto('/profile', { invalidateAll: true });
             } else {
                 const data = await res.json();
                 error = data.message || 'Erreur lors de la connexion';
@@ -57,7 +54,6 @@
 
     async function handleGoogleLogin() {
         try {
-            // Rediriger vers l'endpoint Google OAuth
             window.location.href = '/api/auth/google';
         } catch (e) {
             error = 'Erreur lors de la connexion avec Google';
@@ -65,27 +61,29 @@
     }
 </script>
 
-<div class="login-background">
-    <div class="login-card">
-        <h1 class="form-title">Connexion</h1>
+<div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div class="bg-white p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
+        <h1 class="text-center mb-10 text-3xl font-bold">Connexion</h1>
         {#if error}
-            <div class="form-error">{error}</div>
+            <div class="text-red-500 bg-red-50 rounded-md p-3 mb-4 text-center">{error}</div>
         {/if}
         
-        <GoogleButtonComponent onClick={handleGoogleLogin} />
+        <GoogleButtonComponent onclick={handleGoogleLogin} />
         
-        <div class="separator">
-            <span>ou</span>
+        <div class="flex items-center text-center my-6">
+            <div class="flex-1 border-b border-gray-300"></div>
+            <span class="px-4 text-gray-600 text-sm">ou</span>
+            <div class="flex-1 border-b border-gray-300"></div>
         </div>
 
-        <form on:submit|preventDefault={handleSubmit}>
+        <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-1">
             <TextFieldComponent
                 variant="outlined"
                 bind:value={email}
                 label="Email"
                 type="email"
                 required={true}
-                classe="login-input"
+                classe="w-full max-w-full box-border"
             />
             <TextFieldComponent
                 variant="outlined"
@@ -93,21 +91,22 @@
                 label="Mot de passe"
                 type="password"
                 required={true}
-                classe="login-input"
+                classe="w-full max-w-full box-border"
             />
-            <div class="forgot-password-link">
-            <a href="/forgotPassword">Mot de passe oublié ?</a>
+            <div class="-mt-2 text-left text-xs">
+                <a href="/forgotPassword" class="text-blue-600 font-normal link-hover">Mot de passe oublié ?</a>
             </div>
             <ButtonComponent
                 color="primary"
                 variant="raised"
-                on:click={handleSubmit}
+                onClick={handleSubmit}
+                classe="mt-8"
             >
                 Se connecter
             </ButtonComponent>
         </form>
-        <p class="form-link">
-            Pas encore de compte ? <a href="/signup">S'inscrire</a>
+        <p class="mt-6 text-center text-base">
+            Pas encore de compte ? <a href="/signup" class="text-blue-600 font-medium link-hover">S'inscrire</a>
         </p>
     </div>
 </div>

@@ -1,64 +1,70 @@
 <script lang="ts">
-    import './Card.css';
-    export let title: string = '';
-    export let subtitle: string = '';
-    export let content: string = '';
-    export let image: string = '';
-    export let elevation: 'none' | 'low' | 'medium' | 'high' = 'medium';
-    export let variant: 'default' | 'outlined' | 'filled' = 'default';
-    export let padding: 'none' | 'small' | 'medium' | 'large' = 'medium';
-    export let width: string = '100%';
-    export let height: string = 'auto';
-    export let className: string = '';
+    let { 
+        title = '', 
+        subtitle = '', 
+        content = '', 
+        image = '', 
+        elevation = 'medium', 
+        variant = 'default', 
+        padding = 'medium', 
+        width = '100%', 
+        height = 'auto', 
+        className = '', 
+        children, 
+        title$extra, 
+        actions 
+    }: {
+        title?: string;
+        subtitle?: string;
+        content?: string;
+        image?: string;
+        elevation?: 'low' | 'medium' | 'high' | 'none';
+        variant?: 'default' | 'outlined' | 'filled';
+        padding?: 'none' | 'small' | 'medium' | 'large';
+        width?: string;
+        height?: string;
+        className?: string;
+        children?: any;
+        title$extra?: any;
+        actions?: any;
+    } = $props();
 
-    $: elevationClass = {
-        'none': '',
-        'low': 'card-elevation-low',
-        'medium': 'card-elevation-medium',
-        'high': 'card-elevation-high'
-    }[elevation];
-
-    $: variantClass = {
-        'default': 'card-variant-default',
-        'outlined': 'card-variant-outlined',
-        'filled': 'card-variant-filled'
-    }[variant];
-
-    $: paddingClass = {
-        'none': 'card-padding-none',
-        'small': 'card-padding-small',
-        'medium': 'card-padding-medium',
-        'large': 'card-padding-large'
-    }[padding];
+    function elevationCls() { return elevation === 'high' ? 'shadow-2xl' : elevation === 'medium' ? 'shadow-lg' : elevation === 'low' ? 'shadow' : ''; }
+    function variantCls() { return variant === 'outlined' ? 'border border-gray-200 bg-white' : variant === 'filled' ? 'bg-gray-50' : 'bg-white'; }
+    function paddingCls() { return padding === 'large' ? 'p-6' : padding === 'small' ? 'p-2' : padding === 'none' ? 'p-0' : 'p-4'; }
 </script>
 
-<div 
-    class="card {elevationClass} {variantClass} {paddingClass} {className}"
-    style="width: {width}; height: {height};"
->
+<div class={`rounded-2xl overflow-hidden ${variantCls()} ${elevationCls()} ${paddingCls()} ${className} transition-all duration-300 hover:shadow-xl hover:-translate-y-1`} style={`width:${width}; height:${height};`}>
     {#if image}
-        <div class="card-image">
-            <img src={image} alt={title} />
+        <div class="card-image h-48 w-full overflow-hidden">
+            <img 
+                src={image} 
+                alt={title} 
+                loading="lazy" 
+                decoding="async" 
+                class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            />
         </div>
     {/if}
     
-    <div class="card-content">
+    <div class="p-4 grid gap-3">
         {#if title}
-            <h3 class="card-title">{title}</h3>
-        {/if}
-        
-        {#if subtitle}
-            <p class="card-subtitle">{subtitle}</p>
-        {/if}
-        
-        {#if content}
-            <div class="card-body">
-                {content}
+            <div class="flex items-center justify-between gap-2">
+                <h3 class="text-lg font-bold text-gray-900 line-clamp-2">{title}</h3>
+                {@render title$extra?.()}
             </div>
         {/if}
         
-        <div class="card-actions">
-            <slot name="actions" />
+        {#if subtitle}
+            <p class="text-sm text-gray-500 line-clamp-1">{subtitle}</p>
+        {/if}
+        
+        {#if content}
+            <div class="text-gray-700 text-sm line-clamp-3">{content}</div>
+        {/if}
+        
+        <div class="mt-2">
+            {@render actions?.()}
         </div>
     </div>
 </div>

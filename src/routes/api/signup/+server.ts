@@ -1,10 +1,8 @@
 import { json } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '$lib/server/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET;
+import { JWT_SECRET } from '$env/static/private';
 
 export async function POST({ request, cookies }) {
 	try {

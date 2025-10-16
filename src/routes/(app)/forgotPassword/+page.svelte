@@ -29,32 +29,37 @@
     }
 </script>
 
-<div class="login-background">
-    <div class="login-card">
-        <h1 class="form-title">Mot de passe oublié</h1>
+<div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div class="bg-white p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
+        <h1 class="text-center mb-10 text-3xl font-bold">Mot de passe oublié</h1>
 
         {#if message}
-            <div class="form-success">{message}</div>
+            <div class="text-green-500 bg-green-50 rounded-md p-3 mb-4 text-center">{message}</div>
         {/if}
         {#if error}
-            <div class="form-error">{error}</div>
+            <div class="text-red-500 bg-red-50 rounded-md p-3 mb-4 text-center">{error}</div>
         {/if}
 
-        <form on:submit|preventDefault={handleForgotPassword}>
+        <form on:submit|preventDefault={handleForgotPassword} class="flex flex-col gap-1">
             <TextFieldComponent
                 variant="outlined"
                 bind:value={email}
                 label="Adresse email"
                 type="email"
                 required={true}
-                classe="login-input"
+                classe="w-full max-w-full box-border"
             />
-            <ButtonComponent color="primary" variant="raised" on:click={handleForgotPassword}>
+            <ButtonComponent 
+                color="primary" 
+                variant="raised" 
+                onClick={handleForgotPassword}
+                classe="mt-8"
+            >
                 Envoyer
             </ButtonComponent>
         </form>
-        <p class="form-link">
-            <a href="/login">← Retour à la connexion</a>
+        <p class="mt-6 text-center text-base">
+            <a href="/login" class="text-blue-600 font-medium link-hover">← Retour à la connexion</a>
         </p>
     </div>
 </div>

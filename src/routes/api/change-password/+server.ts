@@ -12,7 +12,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			return json({ error: 'Jeton invalide ou expiré' }, { status: 401 });
 		}
 
-		const { currentPassword, newPassword, confirmPassword } = await request.json();
+        const { currentPassword, newPassword, confirmPassword } = await request.json();
 
 		if (newPassword !== confirmPassword) {
 			return json({ error: 'Les mots de passe ne correspondent pas.' }, { status: 400 });
@@ -38,10 +38,12 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			}, { status: 403 });
 		}
 
-		const isValid = await bcrypt.compare(currentPassword, user.password);
-		if (!isValid) {
-			return json({ error: 'Mot de passe actuel incorrect.' }, { status: 401 });
-		}
+        if (currentPassword && currentPassword !== '') {
+            const isValid = await bcrypt.compare(currentPassword, user.password);
+            if (!isValid) {
+                return json({ error: 'Mot de passe actuel incorrect.' }, { status: 401 });
+            }
+        }
 
 		const hashed = await bcrypt.hash(newPassword, 10);
 

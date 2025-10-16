@@ -7,7 +7,6 @@ export const load: PageServerLoad = async ({ locals }) => {
         throw redirect(302, '/login');
     }
     
-    // Récupérer l'utilisateur depuis la DB pour vérifier s'il a un mot de passe
     const userFromDb = await prisma.user.findUnique({
         where: { id: locals.user.id },
         select: { id: true, email: true, username: true, password: true, createdAt: true }
@@ -20,7 +19,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     return {
         user: {
             ...locals.user,
-            hasPassword: userFromDb.password !== '' // true si compte classique, false si Google OAuth
+            hasPassword: userFromDb.password !== '' 
         }
     };
 };

@@ -1,15 +1,11 @@
-:global(body) {
-    background: var(--color-background-alt) !important;
-}
+/* removed global body background override */
 
 .page-container {
-    background: var(--color-background-alt) !important;
     min-height: 100vh;
     overflow-x: hidden;
 }
 
 section {
-    background: var(--color-background-alt) !important;
     margin: 0 auto;
     padding: 2.5rem 0 2rem 0;
     border-radius: 0;

@@ -1,174 +1,47 @@
-.page-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 3rem 4rem;
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-.page-title {
-    font-size: 2.5rem;
-    color: var(--color-text-primary);
-    margin-bottom: 2.5rem;
-    text-align: center;
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to { 
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
-.search-section {
-    margin-top: 3rem;
-    margin-bottom: 3rem;
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease;
 }
 
-.search-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    max-width: 800px;
-    margin: 0 auto;
+.animate-slideIn {
+    animation: slideIn 0.3s ease;
 }
 
-.search-input {
-    width: 100%;
-    padding: 1rem;
-    font-size: 1.1rem;
-    border: 2px solid var(--color-border);
-    border-radius: var(--border-radius-lg);
-    background: var(--color-background);
-    color: var(--color-text-primary);
-    transition: all 0.3s ease;
-}
-
-.search-input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
-}
-
-.search-filters {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.filter-select {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-md);
-    background: var(--color-background);
-    color: var(--color-text-primary);
-    cursor: pointer;
-}
-
-.models-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5rem;
-    padding: 2rem 1rem;
-    margin: 0 auto;
-    max-width: 100%;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Fixer la hauteur des cartes pour aligner les boutons */
-.models-grid :global(.card) {
-    height: 400px;
-    display: flex;
-    flex-direction: column;
-}
-
-.models-grid :global(.card-content) {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-/* Fixer la hauteur de la zone de description - FORCER 2 LIGNES */
-.models-grid :global(.card-body) {
-    min-height: 60px !important;
-    height: 60px !important;
+.card-wrapper {
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    border-radius: 16px !important;
+    outline: none !important;
     overflow: hidden !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    margin: 0 !important;
-    flex-shrink: 0 !important;
-    line-height: 1.5 !important;
-    font-size: 1rem !important;
-    color: var(--color-text-primary, #333) !important;
+    background: white !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
 
-/* Fixer la hauteur de la zone subtitle pour uniformiser */
-.models-grid :global(.card-subtitle) {
-    height: 20px;
-    overflow: hidden;
-    margin: 0;
-    flex-shrink: 0;
+.card-wrapper:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
 }
 
-.models-grid :global(.card-actions) {
-    margin-top: auto !important;
-    margin-bottom: 0 !important;
-    flex-shrink: 0;
-    position: absolute;
-    bottom: 1.5rem;
-    left: 1.5rem;
-    right: 1.5rem;
+.card-wrapper:focus {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px !important;
 }
 
-/* Responsive pour les écrans plus petits */
-@media (max-width: 1200px) {
-    .models-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .models-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.model-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    width: 100%;
-}
-
-.model-category {
-    font-size: 0.875rem;
-    color: var(--color-primary);
-    font-weight: 500;
-}
-
-.model-stats {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-}
-
-.model-downloads, .model-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-@media (max-width: 768px) {
-    .page-container {
-        padding: 2rem 1.5rem;
-    }
-
-    .page-title {
-        font-size: 2rem;
-    }
-
-    .search-filters {
-        flex-direction: column;
-    }
-
-    .models-grid {
-        gap: 2.5rem;
-        grid-template-columns: 1fr;
-        padding: 1.5rem 0;
-    }
+.card-wrapper:active {
+    transform: translateY(-2px) !important;
 }

@@ -1,8 +1,8 @@
 <script lang="ts">
-    import './signup.css';
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
     import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
+    import { goto, invalidate } from '$app/navigation';
 
     let email = '';
     let password = '';
@@ -32,7 +32,8 @@
                 return;
             }
 
-            window.location.href = '/profile';
+            await invalidate('auth:session');
+            await goto('/profile', { invalidateAll: true });
         } catch (e) {
             error = 'Erreur réseau ou serveur';
         }
@@ -49,27 +50,40 @@
     }
 </script>
 
-<div class="signup-background">
-    <div class="signup-card">
-        <h1 class="form-title">Inscription</h1>
+<style>
+    .link-hover {
+        text-decoration: none;
+        transition: text-decoration 0.2s ease;
+    }
+    
+    .link-hover:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
+    <div class="bg-white p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
+        <h1 class="text-center mb-10 text-3xl font-bold">Inscription</h1>
         {#if error}
-            <div class="form-error">{error}</div>
+            <div class="text-red-500 bg-red-50 rounded-md p-3 mb-4 text-center">{error}</div>
         {/if}
         
         <GoogleButtonComponent onClick={handleGoogleSignup} />
         
-        <div class="separator">
-            <span>ou</span>
+        <div class="flex items-center text-center my-6">
+            <div class="flex-1 border-b border-gray-300"></div>
+            <span class="px-4 text-gray-600 text-sm">ou</span>
+            <div class="flex-1 border-b border-gray-300"></div>
         </div>
 
-        <form on:submit|preventDefault={handleSubmit}>
+        <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-0">
             <TextFieldComponent
                 variant="outlined"
                 bind:value={username}
                 label="Nom d'utilisateur"
                 type="text"
                 required={true}
-                classe="signup-input"
+                classe="w-full"
             />
             <TextFieldComponent
                 variant="outlined"
@@ -77,7 +91,7 @@
                 label="Email"
                 type="email"
                 required={true}
-                classe="signup-input"
+                classe="w-full"
             />
             <TextFieldComponent
                 variant="outlined"
@@ -85,7 +99,7 @@
                 label="Mot de passe"
                 type="password"
                 required={true}
-                classe="signup-input"
+                classe="w-full"
             />
             <TextFieldComponent
                 variant="outlined"
@@ -93,18 +107,19 @@
                 label="Confirmer le mot de passe"
                 type="password"
                 required={true}
-                classe="signup-input"
+                classe="w-full"
             />
             <ButtonComponent
                 color="primary"
                 variant="raised"
-                on:click={handleSubmit}
+                onClick={handleSubmit}
+                classe="mt-5"
             >
                 S'inscrire
             </ButtonComponent>
         </form>
-        <p class="form-link">
-            Déjà un compte ? <a href="/login">Se connecter</a>
+        <p class="mt-6 text-center text-base">
+            Déjà un compte ? <a href="/login" class="text-blue-600 font-medium link-hover">Se connecter</a>
         </p>
     </div>
 </div>
