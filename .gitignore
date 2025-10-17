@@ -33,3 +33,7 @@ create_table.sql
 .vscode/
 *.swp
 *.swo
+
+# Models 3D (synchronisés avec MinIO)
+static/assets/model3D/*
+!static/assets/model3D/.gitkeep

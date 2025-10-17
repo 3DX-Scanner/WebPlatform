@@ -11,6 +11,8 @@
     let selectedCategory = '';
     let sortBy = '';
     let pageKey = 0;
+    let isLoading = true;
+    let loadError = '';
 
     let currentPopup = {
         isOpen: false,
@@ -19,68 +21,31 @@
         modelPath: ''
     };
 
-    let models = [
-        {
-            id: 2,
-            title: "Voiture de Course",
-            subtitle: "Modèle optimisé",
-            content: "Modèle 3D d'une voiture de course, idéal pour les jeux vidéo et les animations.",
-            image: "/assets/model3D/voiture-course/voiture-course.jpg",
-            category: "Véhicules",
-            downloads: 856,
-            rating: 4.5,
-            modelPath: "/assets/model3D/voiture-course/voiture-course.glb",
-            plyPath: "/assets/model3D/voiture-course/voiture-course.ply"
-        },
-        {
-            id: 3,
-            title: "Crâne Anatomique",
-            subtitle: "Modèle médical",
-            content: "Modèle 3D détaillé d'un crâne humain, utilisé dans l'éducation médicale.",
-            image: "/assets/model3D/crane/crane.jpg",
-            category: "Médical",
-            downloads: 2345,
-            rating: 4.9,
-            modelPath: "/assets/model3D/crane/crane.glb"
-        },
-        {
-            id: 7,
-            title: "Crâne Humain",
-            subtitle: "Modèle anatomique détaillé",
-            content: "Modèle 3D d'un crâne humain haute résolution, parfait pour l'étude anatomique.",
-            image: "/assets/model3D/human-skull/human-skull.jpg",
-            category: "Médical",
-            downloads: 1890,
-            rating: 4.8,
-            modelPath: "/assets/model3D/human-skull/human_skull.glb"
-        },
-        
-        {
-            id: 9,
-            title: "Cars",
-            subtitle: "Modèle de voiture",
-            content: "Modèle 3D de voiture avec tous les détails.",
-            image: "/assets/model3D/cars/cars.jpg",
-            category: "Véhicules",
-            downloads: 1200,
-            rating: 4.7,
-            modelPath: "/assets/model3D/cars/cars.glb"
-        },
-        {
-            id: 99,
-            title: "Iguana 3D",
-            subtitle: "Modèle 3D d'iguane",
-            content: "Cliquez pour visualiser le modèle 3D de l'iguane.",
-            image: "/assets/model3D/iguana/Iguana.jpg",
-            category: "Animaux",
-            downloads: 354,
-            rating: 4.9,
-            modelPath: "/assets/model3D/iguana/iguana.glb"
-        }
-    ];
-
-    let filteredModels = models;
+    let models: any[] = [];
+    let filteredModels: any[] = [];
     let categories: string[] = [];
+
+    async function loadModels() {
+        isLoading = true;
+        loadError = '';
+        
+        try {
+            const response = await fetch('/api/models');
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors du chargement des modèles');
+            }
+            
+            models = data.models || [];
+            filteredModels = [...models];
+            isLoading = false;
+        } catch (error) {
+            console.error('Erreur lors du chargement des modèles:', error);
+            loadError = 'Impossible de charger les modèles. Veuillez réessayer plus tard.';
+            isLoading = false;
+        }
+    }
 
     function resetPageState() {
         currentPopup = {
@@ -92,12 +57,14 @@
         searchQuery = '';
         selectedCategory = '';
         sortBy = '';
-        filteredModels = [...models];
+        if (models.length > 0) {
+            filteredModels = [...models];
+        }
         pageKey++;
     }
 
     onMount(() => {
-        resetPageState();
+        loadModels();
     });
 
     afterNavigate(() => {
@@ -188,29 +155,44 @@
 <div class="min-h-screen bg-gray-50">
 
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ModelFiltersComponent 
-            {searchQuery}
-            {selectedCategory}
-            {categories}
-            onSearchChange={handleSearchChange}
-            onCategoryChange={handleCategoryChange}
-        />
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {#each filteredModels as model (model.id)}
-                <ModelCardComponent 
-                    {model}
-                    onClick={() => openModelPopup(model)}
-                />
-            {/each}
-        </div>
-        
-        {#if filteredModels.length === 0}
+        {#if isLoading}
+            <div class="flex items-center justify-center min-h-[400px]">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <p class="mt-4 text-gray-600">Chargement des modèles...</p>
+                </div>
+            </div>
+        {:else if loadError}
             <EmptyStateComponent 
-                icon="🔍"
-                title="Aucun modèle trouvé"
-                description="Essayez de modifier vos critères de recherche"
+                icon="❌"
+                title="Erreur de chargement"
+                description={loadError}
             />
+        {:else}
+            <ModelFiltersComponent 
+                {searchQuery}
+                {selectedCategory}
+                {categories}
+                onSearchChange={handleSearchChange}
+                onCategoryChange={handleCategoryChange}
+            />
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {#each filteredModels as model (model.id)}
+                    <ModelCardComponent 
+                        {model}
+                        onClick={() => openModelPopup(model)}
+                    />
+                {/each}
+            </div>
+            
+            {#if filteredModels.length === 0}
+                <EmptyStateComponent 
+                    icon="🔍"
+                    title="Aucun modèle trouvé"
+                    description="Essayez de modifier vos critères de recherche"
+                />
+            {/if}
         {/if}
     </section>
 

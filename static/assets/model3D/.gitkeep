@@ -1,0 +1,2 @@
+# Ce fichier permet de garder le dossier model3D dans Git
+# Les modèles 3D sont ignorés par .gitignore mais synchronisés vers MinIO au démarrage
