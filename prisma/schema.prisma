@@ -9,9 +9,38 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String   @unique
+  id        Int          @id @default(autoincrement())
+  email     String
+  username  String
   password  String
-  createdAt DateTime @default(now())
+  createdAt DateTime     @default(now())
+  devices   UserDevice[]
+
+  @@unique([email, username])
+}
+
+model UserDevice {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  deviceId Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device   Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  pairedAt DateTime @default(now())
+
+  @@unique([userId, deviceId])
+}
+
+model Device {
+  id           Int          @id @default(autoincrement())
+  serialNumber String       @unique
+  modelId      Int
+  model        DeviceModel  @relation(fields: [modelId], references: [id])
+  createdAt    DateTime     @default(now())
+  users        UserDevice[]
+}
+
+model DeviceModel {
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
+  devices Device[]
 }
