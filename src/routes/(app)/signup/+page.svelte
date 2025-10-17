@@ -50,17 +50,6 @@
     }
 </script>
 
-<style>
-    .link-hover {
-        text-decoration: none;
-        transition: text-decoration 0.2s ease;
-    }
-    
-    .link-hover:hover {
-        text-decoration: underline;
-    }
-</style>
-
 <div class="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8">
     <div class="bg-white p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
         <h1 class="text-center mb-10 text-3xl font-bold">Inscription</h1>
@@ -68,7 +57,7 @@
             <div class="text-red-500 bg-red-50 rounded-md p-3 mb-4 text-center">{error}</div>
         {/if}
         
-        <GoogleButtonComponent onClick={handleGoogleSignup} />
+        <GoogleButtonComponent onclick={handleGoogleSignup} />
         
         <div class="flex items-center text-center my-6">
             <div class="flex-1 border-b border-gray-300"></div>

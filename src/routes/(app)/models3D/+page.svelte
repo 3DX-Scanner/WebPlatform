@@ -1,9 +1,10 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { afterNavigate } from '$app/navigation';
-    import CardComponent from '$lib/components/Card/CardComponent.svelte';
+    import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
+    import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
+    import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
-    import './models3D.css';
 
     let isAuthenticated = false;
     let searchQuery = '';
@@ -132,14 +133,12 @@
     $: filteredModels = filterAndSortModels(models, searchQuery, selectedCategory, sortBy);
     $: categories = Array.from(new Set(models.map((m) => m.category))).sort();
 
-    function handleSearch(event: Event) {
-        const target = event.target as HTMLInputElement;
-        searchQuery = target.value;
+    function handleSearchChange(value: string) {
+        searchQuery = value;
     }
 
-    function handleCategoryChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-        selectedCategory = target.value;
+    function handleCategoryChange(value: string) {
+        selectedCategory = value;
     }
 
     function handleSortChange(event: Event) {
@@ -189,66 +188,29 @@
 <div class="min-h-screen bg-gray-50">
 
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center mb-8">
-            <input
-                type="text"
-                class="md:col-span-2 h-11 w-full px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Rechercher (titre, sous-titre, catégorie)"
-                value={searchQuery}
-                on:input={handleSearch}
-            />
-
-            <select
-                class="md:col-span-1 h-11 w-full px-4 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                on:change={handleCategoryChange}
-                bind:value={selectedCategory}
-            >
-                <option value="">Toutes les catégories</option>
-                {#each categories as cat}
-                    <option value={cat}>{cat}</option>
-                {/each}
-            </select>
-        </div>
+        <ModelFiltersComponent 
+            {searchQuery}
+            {selectedCategory}
+            {categories}
+            onSearchChange={handleSearchChange}
+            onCategoryChange={handleCategoryChange}
+        />
+        
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {#each filteredModels as model (model.id)}
-                <div 
-                    class="card-wrapper" 
-                    role="button"
-                    tabindex="0"
-                    on:click={() => openModelPopup(model)}
-                    on:keydown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            openModelPopup(model);
-                        }
-                    }}
-                    aria-label={`Voir le modèle ${model.title}`}
-                >
-                    <CardComponent
-                        title={model.title}
-                        subtitle={model.subtitle}
-                        content=""
-                        image={model.image}
-                        elevation="medium"
-                        variant="default"
-                        padding="medium"
-                    >
-                        {#snippet title$extra()}
-                            <span class="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                {model.category}
-                            </span>
-                        {/snippet}
-                    </CardComponent>
-                </div>
+                <ModelCardComponent 
+                    {model}
+                    onClick={() => openModelPopup(model)}
+                />
             {/each}
         </div>
         
         {#if filteredModels.length === 0}
-            <div class="text-center py-12">
-                <div class="text-gray-400 text-6xl mb-4">🔍</div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun modèle trouvé</h3>
-                <p class="text-gray-500">Essayez de modifier vos critères de recherche</p>
-            </div>
+            <EmptyStateComponent 
+                icon="🔍"
+                title="Aucun modèle trouvé"
+                description="Essayez de modifier vos critères de recherche"
+            />
         {/if}
     </section>
 
