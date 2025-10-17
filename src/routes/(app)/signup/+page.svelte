@@ -43,7 +43,7 @@
 
     async function handleGoogleSignup() {
         try {
-            console.log('Google signup attempt');
+            window.location.href = '/api/auth/google';
         } catch (e) {
             error = 'Erreur lors de l\'inscription avec Google';
         }
