@@ -4,6 +4,7 @@
     import { onMount, tick } from 'svelte';
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
+    import { theme, toggleTheme } from '$lib/stores/theme';
 
     export let data: {
     user: {
@@ -17,8 +18,6 @@
 
     let selectedSection: 'securite' | 'preferences' | 'modeles' | 'abonnement' = 'securite';
     let language: 'fr' | 'en' = 'fr';
-    let theme: 'light' | 'dark' = 'light';
-    // Sécurité - changement de mot de passe
     let editingPassword = false;
     let showPwdModal = false;
     let currentPassword = '';
@@ -114,7 +113,11 @@
     }
 
     function handleThemeChange(newTheme: 'light' | 'dark') {
-        theme = newTheme;
+        if (newTheme === 'light') {
+            theme.set('light');
+        } else {
+            theme.set('dark');
+        }
     }
 
     function handlePasswordFieldChange(field: string, value: string) {
@@ -124,16 +127,16 @@
     }
 </script>
 
-<div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4">
+<div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4 bg-gray-50 dark:bg-gray-900">
     <div class="w-full max-w-6xl mx-auto grid gap-5 grid-cols-[340px_1fr] items-stretch">
         <aside>
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full" bind:this={leftCardEl}>
+            <div class="bg-white dark:bg-gray-800 backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full" bind:this={leftCardEl}>
                 <div class="w-24 h-24 rounded-full grid place-items-center bg-gray-700 text-white text-2xl font-bold">
                     {data.user.email.charAt(0).toUpperCase()}
                 </div>
-                <div class="font-extrabold text-gray-900 text-lg">{data.user.username}</div>
-                <div class="text-gray-500 text-base">{data.user.email || 'Connecté via Google'}</div>
-                <div class="mt-1 bg-emerald-100 text-emerald-700 px-3 py-2 rounded-full text-sm">
+                <div class="font-extrabold text-gray-900 dark:text-white text-lg">{data.user.username}</div>
+                <div class="text-gray-500 dark:text-gray-400 text-base">{data.user.email || 'Connecté via Google'}</div>
+                <div class="mt-1 px-3 py-2 rounded-full text-sm" style="background-color: {$theme === 'dark' ? '#064e3b' : '#d1fae5'}; color: {$theme === 'dark' ? '#6ee7b7' : '#065f46'};">
                     Membre depuis {new Date(data.user.createdAt).toLocaleDateString('fr-FR')}
                 </div>
 
@@ -148,8 +151,8 @@
                             <button 
                                 type="button" 
                                 role="tab" 
-                                class="w-full text-left rounded-xl bg-slate-50 hover:bg-slate-100 px-4 py-3 font-semibold text-gray-800 transition-colors duration-200"
-                                class:bg-indigo-50={selectedSection === section.id}
+                                class="w-full text-left rounded-xl px-4 py-3 font-semibold transition-colors duration-200"
+                                style="background-color: {selectedSection === section.id ? ($theme === 'dark' ? '#1e3a8a' : '#eef2ff') : ($theme === 'dark' ? '#374151' : '#f8fafc')}; color: {selectedSection === section.id ? ($theme === 'dark' ? '#dbeafe' : '#1e3a8a') : ($theme === 'dark' ? '#ffffff' : '#1f2937')};"
                                 aria-selected={selectedSection === section.id} 
                                 onclick={() => handleSectionChange(section.id as 'securite' | 'preferences' | 'modeles' | 'abonnement')}
                             >
@@ -168,10 +171,10 @@
         </aside>
 
         <main>
-            <div class="bg-white rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
             {#if selectedSection==='securite'}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Sécurité du compte</h3>
+                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Sécurité du compte</h3>
                     <div class="flex flex-col items-center gap-5">
                         <div class="grid gap-3 w-full max-w-[500px]">
                             {#if !data.user.hasPassword}
@@ -186,7 +189,7 @@
                                 </div>
                             {:else if !editingPassword}
                                 <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                    <span class="font-bold text-gray-700">Mot de passe</span>
+                                    <span class="font-bold text-gray-700 dark:text-gray-300">Mot de passe</span>
                                     <ButtonComponent color="primary" variant="raised" classe="w-64" href="" onClick={() => { showPwdModal = true; }}>
                                         Changer le mot de passe
                                     </ButtonComponent>
@@ -194,19 +197,19 @@
                             {:else}
                                 <div class="grid gap-3">
                                     <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Mot de passe actuel</span>
+                                        <span class="font-bold text-gray-700 dark:text-gray-300">Mot de passe actuel</span>
                                         <TextFieldComponent label="" classe="nolabel" type="password" bind:value={currentPassword} />
                                     </div>
                                     <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Nouveau mot de passe</span>
+                                        <span class="font-bold text-gray-700 dark:text-gray-300">Nouveau mot de passe</span>
                                         <TextFieldComponent label="" classe="nolabel" type="password" bind:value={newPassword} />
                                     </div>
                                     <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Confirmer le mot de passe</span>
+                                        <span class="font-bold text-gray-700 dark:text-gray-300">Confirmer le mot de passe</span>
                                         <TextFieldComponent label="" classe="nolabel" type="password" bind:value={confirmPassword} />
                                     </div>
                                     {#if passwordError}
-                                        <div class="text-red-600 font-semibold">{passwordError}</div>
+                                        <div class="text-red-600 dark:text-red-400 font-semibold">{passwordError}</div>
                                     {/if}
                                     <div class="flex gap-3 items-center">
                                         <ButtonComponent color="primary" variant="raised" href="" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
@@ -221,48 +224,50 @@
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[500px]">
                             <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                <span class="font-bold text-gray-700">Double authentification</span>
-                                <input type="text" value="Désactivée" disabled class="border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-500" />
+                                <span class="font-bold text-gray-700 dark:text-gray-300">Double authentification</span>
+                                <input type="text" value="Désactivée" disabled class="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" />
                             </div>
                         </div>
                     </div>
                 </section>
             {:else if selectedSection==='preferences'}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Préférences</h3>
+                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Préférences</h3>
                     <div class="grid gap-4">
                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                            <span class="font-bold text-gray-700">Langue</span>
+                            <span class="font-bold text-gray-700 dark:text-gray-300">Langue</span>
                             <select 
                                 id="lang-select" 
                                 value={language}
                                 onchange={(e) => handleLanguageChange((e.target as HTMLSelectElement).value as 'fr' | 'en')}
-                                class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                                class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200"
                             >
                                 <option value="fr">Français</option>
                                 <option value="en">English</option>
                             </select>
                         </div>
                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                            <span class="font-bold text-gray-700">Thème</span>
-                            <div class="inline-flex gap-2 bg-gray-100 p-1.5 rounded-lg" role="tablist" aria-label="Theme">
+                            <span class="font-bold text-gray-700 dark:text-gray-300">Thème</span>
+                            <div class="inline-flex gap-2 bg-gray-100 dark:bg-gray-700 p-1.5 rounded-lg" role="tablist" aria-label="Theme">
                                 <button 
                                     type="button" 
                                     role="tab" 
-                                    class="px-3 py-2 rounded-md font-semibold text-gray-800 transition-colors duration-200"
-                                    class:bg-white={theme === 'light'}
+                                    class="px-3 py-2 rounded-md font-semibold text-gray-800 dark:text-white transition-colors duration-200"
+                                    class:bg-white={$theme === 'light'}
+                                    class:dark:bg-gray-600={$theme === 'light'}
                                     onclick={() => handleThemeChange('light')} 
-                                    aria-selected={theme === 'light'}
+                                    aria-selected={$theme === 'light'}
                                 >
                                     <span class="mr-1">☀️</span> Clair
                                 </button>
                                 <button 
                                     type="button" 
                                     role="tab" 
-                                    class="px-3 py-2 rounded-md font-semibold text-gray-800 transition-colors duration-200"
-                                    class:bg-white={theme === 'dark'}
+                                    class="px-3 py-2 rounded-md font-semibold text-gray-800 dark:text-white transition-colors duration-200"
+                                    class:bg-white={$theme === 'dark'}
+                                    class:dark:bg-gray-600={$theme === 'dark'}
                                     onclick={() => handleThemeChange('dark')} 
-                                    aria-selected={theme === 'dark'}
+                                    aria-selected={$theme === 'dark'}
                                 >
                                     <span class="mr-1">🌙</span> Sombre
                                 </button>
@@ -272,12 +277,12 @@
                 </section>
             {:else if selectedSection==='modeles'}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Mes modèles</h3>
+                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Mes modèles</h3>
                     <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
-                        <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
-                        <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
+                        <p class="text-gray-500 dark:text-gray-400 font-semibold">Vous n'avez aucun modèle pour le moment</p>
+                        <p class="text-gray-400 dark:text-gray-500">Ouvrez la galerie des modèles 3D.</p>
                         <a 
-                            class="border rounded-md px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-50 transition-colors duration-200" 
+                            class="border rounded-md px-3 py-2 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-200" 
                             href="/models3D"
                         >
                             Voir les modèles
@@ -286,19 +291,19 @@
                 </section>
             {:else}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Abonnement</h3>
+                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Abonnement</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {#each [
                             { id: 'free', name: 'Free Plan', description: 'Accès limité aux fonctionnalités.', current: true },
                             { id: 'pro', name: 'Pro', description: 'Limites étendues et plus de confort.', current: false },
                             { id: 'ultra', name: 'Ultra', description: 'Limites très élevées et accès anticipé.', current: false }
                         ] as plan}
-                            <div class="bg-gray-900 text-gray-200 rounded-xl p-4 grid gap-2">
-                                <h4>{plan.name}</h4>
-                                <p class="text-gray-400">{plan.description}</p>
+                            <div class="bg-gray-900 dark:bg-gray-700 text-gray-200 dark:text-gray-100 rounded-xl p-4 grid gap-2">
+                                <h4 class="text-white dark:text-white">{plan.name}</h4>
+                                <p class="text-gray-400 dark:text-gray-300">{plan.description}</p>
                                 <button 
                                     type="button" 
-                                    class="bg-blue-400 text-gray-900 px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                    class="bg-blue-400 dark:bg-blue-500 text-gray-900 dark:text-white px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" 
                                     disabled={plan.current}
                                 >
                                     {plan.current ? 'Actuel' : `Passer en ${plan.name}`}

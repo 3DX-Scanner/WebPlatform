@@ -11,7 +11,7 @@
 </script>
 
 <div class="text-center py-12">
-    <div class="text-gray-400 text-6xl mb-4">{icon}</div>
-    <h3 class="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-    <p class="text-gray-500">{description}</p>
+    <div class="text-gray-400 dark:text-gray-500 text-6xl mb-4">{icon}</div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{title}</h3>
+    <p class="text-gray-500 dark:text-gray-400">{description}</p>
 </div>

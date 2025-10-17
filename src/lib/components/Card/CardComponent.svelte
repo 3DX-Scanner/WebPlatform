@@ -30,7 +30,7 @@
     } = $props();
 
     function elevationCls() { return elevation === 'high' ? 'shadow-2xl' : elevation === 'medium' ? 'shadow-lg' : elevation === 'low' ? 'shadow' : ''; }
-    function variantCls() { return variant === 'outlined' ? 'border border-gray-200 bg-white' : variant === 'filled' ? 'bg-gray-50' : 'bg-white'; }
+    function variantCls() { return variant === 'outlined' ? 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' : variant === 'filled' ? 'bg-gray-50 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'; }
     function paddingCls() { return padding === 'large' ? 'p-6' : padding === 'small' ? 'p-2' : padding === 'none' ? 'p-0' : 'p-4'; }
 </script>
 
@@ -50,17 +50,17 @@
     <div class="p-4 grid gap-3">
         {#if title}
             <div class="flex items-center justify-between gap-2">
-                <h3 class="text-lg font-bold text-gray-900 line-clamp-2">{title}</h3>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white line-clamp-2">{title}</h3>
                 {@render title$extra?.()}
             </div>
         {/if}
         
         {#if subtitle}
-            <p class="text-sm text-gray-500 line-clamp-1">{subtitle}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{subtitle}</p>
         {/if}
         
         {#if content}
-            <div class="text-gray-700 text-sm line-clamp-3">{content}</div>
+            <div class="text-gray-700 dark:text-gray-300 text-sm line-clamp-3">{content}</div>
         {/if}
         
         <div class="mt-2">
