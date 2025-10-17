@@ -3,7 +3,7 @@
 </script>
 
 <button 
-    class="flex items-center justify-center gap-2.5 w-full px-6 py-3 bg-white border border-gray-300 font-medium text-sm text-gray-700 cursor-pointer transition-colors duration-200 hover:bg-gray-50 active:bg-gray-100"
+    class="flex items-center justify-center gap-2.5 w-full px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-medium text-sm text-gray-700 dark:text-gray-200 cursor-pointer transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600"
     {onclick}
 >
     <svg class="w-4.5 h-4.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18px" height="18px">

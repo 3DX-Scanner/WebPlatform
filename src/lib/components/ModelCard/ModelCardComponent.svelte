@@ -33,7 +33,7 @@
 </script>
 
 <div 
-    class="cursor-pointer transition-all duration-300 rounded-2xl outline-none overflow-hidden bg-white shadow-lg hover:shadow-xl hover:-translate-y-1 focus:outline-2 focus:outline-blue-500 focus:outline-offset-2 active:translate-y-0"
+    class="cursor-pointer transition-all duration-300 rounded-2xl outline-none overflow-hidden bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl hover:-translate-y-1 focus:outline-2 focus:outline-blue-500 dark:focus:outline-blue-400 focus:outline-offset-2 active:translate-y-0"
     role="button"
     tabindex="0"
     onclick={handleClick}
@@ -50,7 +50,7 @@
         padding="none"
     >
         {#snippet title$extra()}
-            <span class="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+            <span class="inline-block px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
                 {model.category}
             </span>
         {/snippet}

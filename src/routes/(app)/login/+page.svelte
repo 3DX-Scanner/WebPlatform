@@ -61,19 +61,19 @@
     }
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-    <div class="bg-white p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
-        <h1 class="text-center mb-10 text-3xl font-bold">Connexion</h1>
+<div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
+    <div class="bg-white dark:bg-gray-800 p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
+        <h1 class="text-center mb-10 text-3xl font-bold text-gray-900 dark:text-white">Connexion</h1>
         {#if error}
-            <div class="text-red-500 bg-red-50 rounded-md p-3 mb-4 text-center">{error}</div>
+            <div class="text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md p-3 mb-4 text-center">{error}</div>
         {/if}
         
         <GoogleButtonComponent onclick={handleGoogleLogin} />
         
         <div class="flex items-center text-center my-6">
-            <div class="flex-1 border-b border-gray-300"></div>
-            <span class="px-4 text-gray-600 text-sm">ou</span>
-            <div class="flex-1 border-b border-gray-300"></div>
+            <div class="flex-1 border-b border-gray-300 dark:border-gray-600"></div>
+            <span class="px-4 text-gray-600 dark:text-gray-400 text-sm">ou</span>
+            <div class="flex-1 border-b border-gray-300 dark:border-gray-600"></div>
         </div>
 
         <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-1">
@@ -105,8 +105,8 @@
                 Se connecter
             </ButtonComponent>
         </form>
-        <p class="mt-6 text-center text-base">
-            Pas encore de compte ? <a href="/signup" class="text-blue-600 font-medium link-hover">S'inscrire</a>
+        <p class="mt-6 text-center text-base text-gray-700 dark:text-gray-300">
+            Pas encore de compte ? <a href="/signup" class="text-blue-600 dark:text-blue-400 font-medium link-hover">S'inscrire</a>
         </p>
     </div>
 </div>

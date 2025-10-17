@@ -59,7 +59,6 @@
     --transition-slow: 0.5s ease;
 }
 
-/* Styles de base */
 html, body {
     margin: 0;
     padding: 0;
@@ -73,7 +72,280 @@ body {
     line-height: 1.5;
 }
 
-/* Styles de liens */
+.dark body {
+    background-color: #111827 !important;
+    color: #ffffff !important;
+}
+
+.dark {
+    color-scheme: dark;
+}
+
+.dark * {
+    border-color: #374151;
+}
+
+.dark .bg-white {
+    background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-50 {
+    background-color: #111827 !important;
+}
+
+.dark .text-gray-900 {
+    color: #ffffff !important;
+}
+
+.dark .text-gray-600 {
+    color: #d1d5db !important;
+}
+
+.dark .text-gray-500 {
+    color: #9ca3af !important;
+}
+
+.dark .border-gray-200 {
+    border-color: #374151 !important;
+}
+
+.dark .border-gray-300 {
+    border-color: #4b5563 !important;
+}
+
+.dark input {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+    border-color: #4b5563 !important;
+}
+
+.dark input::placeholder {
+    color: #9ca3af !important;
+}
+
+.dark input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.dark label {
+    color: #ffffff !important;
+}
+
+.dark .text-red-500 {
+    color: #ef4444 !important;
+}
+
+.dark .text-red-400 {
+    color: #f87171 !important;
+}
+
+.dark .bg-red-50 {
+    background-color: #7f1d1d !important;
+}
+
+.dark .min-h-screen {
+    background-color: #111827 !important;
+}
+
+.dark .bg-gray-100 {
+    background-color: #111827 !important;
+}
+
+.dark .bg-gray-50 {
+    background-color: #111827 !important;
+}
+
+.dark .bg-gray-800 {
+    background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-900 {
+    background-color: #111827 !important;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: #ffffff !important;
+}
+
+.dark p {
+    color: #d1d5db !important;
+}
+
+.dark .text-gray-700 {
+    color: #d1d5db !important;
+}
+
+.dark .text-gray-300 {
+    color: #d1d5db !important;
+}
+
+.dark button {
+    color: #ffffff !important;
+}
+
+.dark .bg-gray-200 {
+    background-color: #374151 !important;
+    color: #ffffff !important;
+}
+
+.dark .text-gray-800 {
+    color: #ffffff !important;
+}
+
+.dark .border-gray-300 {
+    border-color: #6b7280 !important;
+}
+
+.dark .hover\:bg-gray-300:hover {
+    background-color: #4b5563 !important;
+}
+
+.dark .pricing-card button {
+    color: #ffffff !important;
+}
+
+.dark .pricing-card .text-gray-600 {
+    color: #d1d5db !important;
+}
+
+.dark a:not(.text-blue-600):not(.text-blue-400) {
+    color: #ffffff !important;
+}
+
+.dark a:not(.text-blue-600):not(.text-blue-400):hover {
+    color: #ffffff !important;
+}
+
+.dark a:not(.text-blue-600):not(.text-blue-400):visited {
+    color: #ffffff !important;
+}
+
+.dark a:not(.text-blue-600):not(.text-blue-400):focus {
+    color: #ffffff !important;
+}
+
+.dark .text-blue-600 {
+    color: #3b82f6 !important;
+}
+
+.dark .text-blue-400 {
+    color: #60a5fa !important;
+}
+
+.dark button {
+    color: #ffffff !important;
+}
+
+.dark .text-blue-600 {
+    color: #60a5fa !important;
+}
+
+.dark .text-blue-400 {
+    color: #60a5fa !important;
+}
+
+.dark .border-2 {
+    border-color: #6b7280 !important;
+}
+
+.dark .border-gray-300 {
+    border-color: #6b7280 !important;
+}
+
+.dark .hover\:bg-gray-100:hover {
+    background-color: #374151 !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+    background-color: #374151 !important;
+}
+
+.dark .active\:bg-gray-100:active {
+    background-color: #4b5563 !important;
+}
+
+.dark .hover\:bg-gray-700:hover {
+    background-color: #4b5563 !important;
+}
+
+.dark .hover\:bg-blue-600:hover {
+    background-color: #2563eb !important;
+}
+
+.dark .hover\:bg-blue-500:hover {
+    background-color: #3b82f6 !important;
+}
+
+.dark .hover\:bg-gray-300:hover {
+    background-color: #6b7280 !important;
+}
+
+.dark .hover\:bg-gray-800:hover {
+    background-color: #374151 !important;
+}
+
+.dark .bg-gradient-to-r {
+    background-clip: text !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent !important;
+}
+
+.dark .text-black {
+    color: #ffffff !important;
+}
+
+.dark .text-gray-800 {
+    color: #ffffff !important;
+}
+
+.dark .text-gray-700 {
+    color: #d1d5db !important;
+}
+
+.dark .text-gray-600 {
+    color: #d1d5db !important;
+}
+
+.dark .text-gray-500 {
+    color: #9ca3af !important;
+}
+
+.dark .text-gray-400 {
+    color: #9ca3af !important;
+}
+
+.dark .text-sm {
+    color: #ffffff !important;
+}
+
+.dark .text-base {
+    color: #ffffff !important;
+}
+
+.dark .border-2.border-blue-500 {
+    background-color: transparent !important;
+    border-color: #3b82f6 !important;
+    color: #3b82f6 !important;
+}
+
+.dark .border-2.border-gray-300 {
+    background-color: transparent !important;
+    border-color: #6b7280 !important;
+    color: #6b7280 !important;
+}
+
+.dark .border-2.border-blue-500:hover {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+.dark .border-2.border-gray-300:hover {
+    background-color: #6b7280 !important;
+    color: #ffffff !important;
+}
+
 a:not(.inline-flex) {
     color: var(--color-primary);
     text-decoration: none;
@@ -84,7 +356,6 @@ a:not(.inline-flex):hover {
     color: var(--color-primary-dark);
 }
 
-/* Styles spécifiques pour le header - override Tailwind */
 @layer base {
   header {
     position: fixed !important;
@@ -92,63 +363,116 @@ a:not(.inline-flex):hover {
     left: 0 !important;
     right: 0 !important;
     z-index: 9999 !important;
-    background: white !important;
-    border-bottom: 1px solid #e5e7eb !important;
+    background: #000000 !important;
+    border-bottom: 1px solid #374151 !important;
     transform: translateZ(0) !important;
     will-change: transform !important;
   }
+  
+  .dark header {
+    background: #000000 !important;
+    border-bottom: 1px solid #374151 !important;
+  }
 }
 
-/* Force le header à rester fixe */
 header[style*="position: fixed"] {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
     z-index: 9999 !important;
-    background: white !important;
-    border-bottom: 1px solid #e5e7eb !important;
+    background: #000000 !important;
+    border-bottom: 1px solid #374151 !important;
     width: 100% !important;
     transform: translateZ(0) !important;
     will-change: transform !important;
 }
 
+.dark header[style*="position: fixed"] {
+    background: #000000 !important;
+    border-bottom: 1px solid #374151 !important;
+}
+
 header a {
-    color: #000000 !important;
+    color: #ffffff !important;
     text-decoration: none !important;
 }
 
 header a:hover {
-    color: #000000 !important;
+    color: #ffffff !important;
 }
 
 header a:visited {
-    color: #000000 !important;
+    color: #ffffff !important;
 }
 
 header a:focus {
-    color: #000000 !important;
+    color: #ffffff !important;
 }
 
-/* Styles de boutons */
+header .group:hover span {
+    background-color: #ffffff !important;
+}
+
+.dark a.link-hover:hover {
+    text-decoration: underline !important;
+    text-decoration-color: #3b82f6 !important;
+    text-underline-offset: 4px !important;
+}
+
+a.link-hover:hover {
+    text-decoration: underline !important;
+    text-decoration-color: #3b82f6 !important;
+    text-underline-offset: 4px !important;
+}
+
+.dark header a {
+    color: #ffffff !important;
+}
+
+.dark header a:hover {
+    color: #ffffff !important;
+}
+
+.dark header a:visited {
+    color: #ffffff !important;
+}
+
+.dark header a:focus {
+    color: #ffffff !important;
+}
+
+.dark header .group:hover span {
+    background-color: #ffffff !important;
+}
+
 button {
     cursor: pointer;
     font-family: inherit;
 }
 
-/* Styles de focus */
+/* Désactiver le contour bleu de focus */
 :focus {
-    outline: 2px solid var(--color-primary-light);
-    outline-offset: 2px;
+    outline: none !important;
 }
 
-/* Styles de sélection */
+*:focus {
+    outline: none !important;
+}
+
+button:focus {
+    outline: none !important;
+}
+
+a:focus {
+    outline: none !important;
+}
+
 ::selection {
     background-color: var(--color-primary-light);
     color: var(--color-text-light);
 }
 
-/* Line clamp utilities */
 .line-clamp-1 {
     overflow: hidden;
     display: -webkit-box;
