@@ -72,13 +72,15 @@ export const GET: RequestHandler = async () => {
 					} else if (fileExt === 'glb' || fileExt === 'gltf') {
 						model.modelPath = `/api/models/file?bucket=${encodeURIComponent(bucket.name)}&path=${encodeURIComponent(file.name)}`;
 					} else if (fileExt === 'ply') {
+						// Pour les fichiers PLY, on utilise aussi modelPath pour l'affichage
+						model.modelPath = `/api/models/file?bucket=${encodeURIComponent(bucket.name)}&path=${encodeURIComponent(file.name)}`;
 						model.plyPath = `/api/models/file?bucket=${encodeURIComponent(bucket.name)}&path=${encodeURIComponent(file.name)}`;
 					}
 				}
 
 				// Ajouter les modèles de ce bucket
 				const bucketModels = Array.from(modelMap.values())
-					.filter(model => model.modelPath) // Garder uniquement les modèles avec un fichier 3D
+					.filter(model => model.modelPath || model.plyPath) // Garder les modèles avec un fichier 3D (glb, gltf ou ply)
 					.map(model => {
 						// Nettoyer l'objet
 						const { files, ...cleanModel } = model;

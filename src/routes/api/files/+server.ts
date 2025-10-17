@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { listFiles, BUCKETS } from '$lib/server/minio';
+import { listFiles, ensureUserBucket } from '$lib/server/minio';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Vérifier l'authentification
@@ -9,10 +9,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	}
 
 	try {
-		const bucket = url.searchParams.get('bucket') || BUCKETS.USER_UPLOADS;
-		const prefix = `${locals.user.id}/`; // Liste uniquement les fichiers de l'utilisateur
+		// Créer le bucket de l'utilisateur s'il n'existe pas
+		const userBucket = await ensureUserBucket(locals.user.id);
+		const prefix = url.searchParams.get('prefix') || ''; // Préfixe optionnel
 
-		const files = await listFiles(bucket, prefix);
+		const files = await listFiles(userBucket, prefix);
 
 		// Formater les résultats
 		const formattedFiles = files.map((file) => ({

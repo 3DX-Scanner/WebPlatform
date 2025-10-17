@@ -1,16 +1,18 @@
 import type { Handle } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '$env/static/private';
-import { initializeBuckets } from '$lib/server/minio';
+import { initializeBuckets, syncStaticModelsToMinio } from '$lib/server/minio';
 
 // Initialiser MinIO au démarrage
 let minioInitialized = false;
 
 if (!minioInitialized) {
 	initializeBuckets()
-		.then(() => {
-			minioInitialized = true;
+		.then(async () => {
 			console.log('✅ MinIO initialisé avec succès');
+			// Synchroniser les modèles statiques vers MinIO
+			await syncStaticModelsToMinio();
+			minioInitialized = true;
 		})
 		.catch((err) => {
 			console.error('❌ Erreur lors de l\'initialisation de MinIO:', err);

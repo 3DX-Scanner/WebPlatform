@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { uploadFile, BUCKETS } from '$lib/server/minio';
+import { uploadFile, ensureUserBucket } from '$lib/server/minio';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	// Vérifier l'authentification
@@ -11,7 +11,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		const formData = await request.formData();
 		const file = formData.get('file') as File;
-		const bucketName = (formData.get('bucket') as string) || BUCKETS.USER_UPLOADS;
+		
+		// Créer le bucket de l'utilisateur s'il n'existe pas
+		const bucketName = await ensureUserBucket(locals.user.id);
 
 		if (!file) {
 			return json({ error: 'Aucun fichier fourni' }, { status: 400 });
@@ -41,7 +43,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// Générer un nom unique pour le fichier
 		const timestamp = Date.now();
 		const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-		const objectName = `${locals.user.id}/${timestamp}_${sanitizedFileName}`;
+		const objectName = `${timestamp}_${sanitizedFileName}`;
 
 		// Convertir le fichier en Buffer
 		const arrayBuffer = await file.arrayBuffer();
