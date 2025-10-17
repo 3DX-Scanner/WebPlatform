@@ -31,7 +31,7 @@
     
 </script>
 
-<header style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; background: white !important; border-bottom: 1px solid #e5e7eb !important; width: 100% !important;">
+<header>
     <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div class="text-xl font-extrabold text-gray-900"><a href="/">3DX Scanner</a></div>
 
@@ -45,10 +45,18 @@
                 <span class="absolute left-0 -bottom-1 h-0.5 w-full bg-black scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100"></span>
             </a>
             <a href="/models3D" class="group relative text-black visited:text-black hover:text-black focus:text-black">
-                Nos modèles
+                Solutions
+                <span class="absolute left-0 -bottom-1 h-0.5 w-full bg-black scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100"></span>
+            </a>
+            <a href="/models3D" class="group relative text-black visited:text-black hover:text-black focus:text-black">
+                Parcourir
                 <span class="absolute left-0 -bottom-1 h-0.5 w-full bg-black scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100"></span>
             </a>
             {#if resolvedAuth}
+                <a href="/editor" class="group relative text-black visited:text-black hover:text-black focus:text-black">
+                    Dashboard
+                    <span class="absolute left-0 -bottom-1 h-0.5 w-full bg-black scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100"></span>
+                </a>
                 <a href="/profile" class="group relative text-black visited:text-black hover:text-black focus:text-black">
                     Mon compte
                     <span class="absolute left-0 -bottom-1 h-0.5 w-full bg-black scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100"></span>

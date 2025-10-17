@@ -88,8 +88,8 @@
                 <h3 class="text-2xl font-bold mb-4 text-gray-900">Gratuit</h3>
                 <div class="text-5xl font-bold text-gray-900 my-4">0€</div>
                 <ul class="list-none p-0 my-8">
-                    <li class="my-4 text-gray-600">5 scans par mois</li>
-                    <li class="my-4 text-gray-600">Export basique</li>
+                    <li class="my-4 text-gray-600">1 Go de stockage cloud</li>
+                    <li class="my-4 text-gray-600">Export ply</li>
                     <li class="my-4 text-gray-600">Support communautaire</li>
                 </ul>
                 <ButtonComponent
@@ -103,19 +103,19 @@
             <div class="bg-white p-8 rounded-lg text-center relative transition-transform duration-300 hover:-translate-y-1 border-2 border-blue-600 scale-105">
                 <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium">Populaire</div>
                 <h3 class="text-2xl font-bold mb-4 text-gray-900">Pro</h3>
-                <div class="text-5xl font-bold text-gray-900 my-4">29€<span class="text-base text-gray-600">/mois</span></div>
+                <div class="text-5xl font-bold text-gray-900 my-4">7.99€<span class="text-base text-gray-600">/mois</span></div>
                 <ul class="list-none p-0 my-8">
-                    <li class="my-4 text-gray-600">Scans illimités</li>
-                    <li class="my-4 text-gray-600">Export avancé</li>
+                    <li class="my-4 text-gray-600">500 Go de stockage cloud</li>
+                    <li class="my-4 text-gray-600">Exports ply, obj, fbx, glb</li>
                     <li class="my-4 text-gray-600">Support prioritaire</li>
-                    <li class="my-4 text-gray-600">API accès</li>
+                    <li class="my-4 text-gray-600">Accès API</li>
                 </ul>
                 <ButtonComponent
                     color="primary"
                     variant="raised"
                     href="/signup"
                 >
-                    Essayer Pro
+                    Commencer
                 </ButtonComponent>
             </div>
             <div class="bg-white p-8 rounded-lg text-center relative transition-transform duration-300 hover:-translate-y-1">
@@ -123,7 +123,7 @@
                 <div class="text-5xl font-bold text-gray-900 my-4">Sur mesure</div>
                 <ul class="list-none p-0 my-8">
                     <li class="my-4 text-gray-600">Fonctionnalités personnalisées</li>
-                    <li class="my-4 text-gray-600">Support dédié</li>
+                    <li class="my-4 text-gray-600">Assistance entreprise</li>
                     <li class="my-4 text-gray-600">Formation incluse</li>
                     <li class="my-4 text-gray-600">Intégration sur mesure</li>
                 </ul>
