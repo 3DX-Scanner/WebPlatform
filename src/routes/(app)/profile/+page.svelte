@@ -4,6 +4,10 @@
     import { onMount, tick } from 'svelte';
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
+    import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
+    import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
+    import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
+    import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
 
     export let data: {
     user: {
@@ -25,8 +29,28 @@
     let newPassword = '';
     let confirmPassword = '';
     let passwordError = '';
+    // Changement de username
+    let editingUsername = false;
+    let newUsername = '';
+    let usernameError = '';
     let leftCardEl: HTMLDivElement;
     let rightCardEl: HTMLDivElement;
+
+    // Modèles 3D
+    let userModels: any[] = [];
+    let filteredUserModels: any[] = [];
+    let userModelCategories: string[] = [];
+    let searchQuery = '';
+    let selectedCategory = '';
+    let isLoadingModels = false;
+    let loadModelsError = '';
+
+    let currentPopup = {
+        isOpen: false,
+        title: '',
+        category: '',
+        modelPath: ''
+    };
 
     async function syncHeights() {
         if (!leftCardEl || !rightCardEl) return;
@@ -38,8 +62,98 @@
 
     $: selectedSection, syncHeights();
 
+    async function loadUserModels() {
+        isLoadingModels = true;
+        loadModelsError = '';
+        
+        try {
+            const response = await fetch('/api/user-models');
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors du chargement des modèles');
+            }
+            
+            userModels = data.models || [];
+            filteredUserModels = [...userModels];
+            isLoadingModels = false;
+        } catch (error) {
+            console.error('Erreur lors du chargement des modèles:', error);
+            loadModelsError = 'Impossible de charger vos modèles.';
+            isLoadingModels = false;
+        }
+    }
+
+    function filterAndSortUserModels(list: typeof userModels, search: string, categoryFilter: string) {
+        const normalize = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+        const q = normalize(search.trim());
+
+        let filtered = list.filter(model => {
+            const title = normalize(model.title);
+            const subtitle = normalize(model.subtitle);
+            const content = normalize(model.content);
+            const category = normalize(model.category);
+
+            const matchesSearch = q === '' || title.includes(q) || subtitle.includes(q) || content.includes(q) || category.includes(q);
+            const matchesCategory = !categoryFilter || model.category === categoryFilter;
+            return matchesSearch && matchesCategory;
+        });
+
+        return filtered;
+    }
+
+    $: filteredUserModels = filterAndSortUserModels(userModels, searchQuery, selectedCategory);
+    $: userModelCategories = Array.from(new Set(userModels.map((m) => m.category))).sort();
+
+    function handleSearchChange(value: string) {
+        searchQuery = value;
+    }
+
+    function handleCategoryChange(value: string) {
+        selectedCategory = value;
+    }
+
+    function openModelPopup(model: any) {
+        currentPopup = {
+            isOpen: true,
+            title: model.title,
+            category: model.category,
+            modelPath: model.modelPath
+        };
+    }
+
+    function closePopup() {
+        currentPopup.isOpen = false;
+    }
+
+    async function downloadModel(event: CustomEvent) {
+        const { modelPath, title } = event.detail;
+        try {
+            const response = await fetch(modelPath);
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${title}.glb`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            console.log(`Téléchargement de ${title} réussi`);
+        } catch (error) {
+            console.error('Erreur lors du téléchargement:', error);
+            alert('Erreur lors du téléchargement du modèle.');
+        }
+    }
+
     onMount(() => {
         syncHeights();
+        loadUserModels();
         const onResize = () => syncHeights();
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
@@ -84,7 +198,6 @@
             console.log('Mot de passe changé');
             editingPassword = false;
             resetPasswordForm();
-            alert('Mot de passe modifié avec succès !');
         } catch (err) {
             console.error(err);
             passwordError = 'Erreur réseau.';
@@ -121,6 +234,94 @@
         if (field === 'current') currentPassword = value;
         if (field === 'new') newPassword = value;
         if (field === 'confirm') confirmPassword = value;
+    }
+
+    async function startEditingUsername() {
+        editingUsername = true;
+        newUsername = data.user.username;
+        usernameError = '';
+    }
+
+    function cancelEditingUsername() {
+        editingUsername = false;
+        newUsername = '';
+        usernameError = '';
+    }
+
+    function validateUsername() {
+        // Ne valide pas si c'est vide ou identique à l'actuel (pour désactiver le bouton)
+        if (!newUsername || newUsername === data.user.username) {
+            return false;
+        }
+        
+        if (newUsername.length < 3 || newUsername.length > 30) {
+            return false;
+        }
+        
+        const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+        if (!usernameRegex.test(newUsername)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    // Réinitialiser l'erreur quand l'utilisateur modifie le champ
+    $: if (newUsername && editingUsername) {
+        // Efface l'erreur serveur uniquement, pas les erreurs de validation
+        if (usernameError === 'Ce nom d\'utilisateur est déjà utilisé' || usernameError === 'Erreur réseau') {
+            usernameError = '';
+        }
+    }
+
+    async function saveUsername() {
+        // Validation côté client avant envoi
+        usernameError = '';
+        
+        if (!newUsername) {
+            usernameError = 'Le nom d\'utilisateur ne peut pas être vide';
+            return;
+        }
+        
+        if (newUsername.length < 3 || newUsername.length > 30) {
+            usernameError = 'Le nom d\'utilisateur doit contenir entre 3 et 30 caractères';
+            return;
+        }
+        
+        const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+        if (!usernameRegex.test(newUsername)) {
+            usernameError = 'Uniquement lettres, chiffres, tirets et underscores autorisés';
+            return;
+        }
+        
+        if (newUsername === data.user.username) {
+            usernameError = 'Le nouveau nom d\'utilisateur est identique à l\'actuel';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/change-username', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newUsername }),
+                credentials: 'include'
+            });
+
+            const responseData = await res.json();
+
+            if (!res.ok) {
+                usernameError = responseData.error || 'Erreur lors du changement de nom d\'utilisateur';
+                return;
+            }
+
+            // Mettre à jour les données locales
+            data.user.username = newUsername;
+            editingUsername = false;
+            usernameError = '';
+        } catch (err) {
+            console.error(err);
+            usernameError = 'Erreur réseau';
+        }
     }
 </script>
 
@@ -174,49 +375,41 @@
                     <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Sécurité du compte</h3>
                     <div class="flex flex-col items-center gap-5">
                         <div class="grid gap-3 w-full max-w-[500px]">
-                            {#if !data.user.hasPassword}
-                                <!-- Utilisateur connecté via Google OAuth -->
-                                <div class="flex gap-4 bg-gradient-to-r from-indigo-400 to-purple-600 rounded-xl p-5 text-white items-start">
-                                    <div class="text-2xl">🔒</div>
-                                    <div class="flex flex-col gap-2">
-                                        <h4 class="m-0 text-white text-lg font-bold">Authentification Google</h4>
-                                        <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
-                                        <p class="m-0 text-white/85 italic">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
-                                    </div>
-                                </div>
-                            {:else if !editingPassword}
-                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                    <span class="font-bold text-gray-700">Mot de passe</span>
-                                    <ButtonComponent color="primary" variant="raised" classe="w-64" href="" onClick={() => { showPwdModal = true; }}>
-                                        Changer le mot de passe
-                                    </ButtonComponent>
-                                </div>
-                            {:else}
-                                <div class="grid gap-3">
+                            {#if data.user.hasPassword}
+                                {#if !editingPassword}
                                     <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Mot de passe actuel</span>
-                                        <TextFieldComponent label="" classe="nolabel" type="password" bind:value={currentPassword} />
-                                    </div>
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Nouveau mot de passe</span>
-                                        <TextFieldComponent label="" classe="nolabel" type="password" bind:value={newPassword} />
-                                    </div>
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Confirmer le mot de passe</span>
-                                        <TextFieldComponent label="" classe="nolabel" type="password" bind:value={confirmPassword} />
-                                    </div>
-                                    {#if passwordError}
-                                        <div class="text-red-600 font-semibold">{passwordError}</div>
-                                    {/if}
-                                    <div class="flex gap-3 items-center">
-                                        <ButtonComponent color="primary" variant="raised" href="" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
-                                            Enregistrer
-                                        </ButtonComponent>
-                                        <ButtonComponent color="secondary" variant="outlined" href="" onClick={() => { editingPassword = false; resetPasswordForm(); }}>
-                                            Annuler
+                                        <span class="font-bold text-gray-700">Mot de passe</span>
+                                        <ButtonComponent color="primary" variant="raised" classe="w-64" href="" onClick={() => { showPwdModal = true; }}>
+                                            Changer le mot de passe
                                         </ButtonComponent>
                                     </div>
-                                </div>
+                                {:else}
+                                    <div class="grid gap-3">
+                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                            <span class="font-bold text-gray-700">Mot de passe actuel</span>
+                                            <TextFieldComponent label="" classe="nolabel" type="password" bind:value={currentPassword} />
+                                        </div>
+                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                            <span class="font-bold text-gray-700">Nouveau mot de passe</span>
+                                            <TextFieldComponent label="" classe="nolabel" type="password" bind:value={newPassword} />
+                                        </div>
+                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                            <span class="font-bold text-gray-700">Confirmer le mot de passe</span>
+                                            <TextFieldComponent label="" classe="nolabel" type="password" bind:value={confirmPassword} />
+                                        </div>
+                                        {#if passwordError}
+                                            <div class="text-red-600 font-semibold">{passwordError}</div>
+                                        {/if}
+                                        <div class="flex gap-3 items-center">
+                                            <ButtonComponent color="primary" variant="raised" href="" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
+                                                Enregistrer
+                                            </ButtonComponent>
+                                            <ButtonComponent color="secondary" variant="outlined" href="" onClick={() => { editingPassword = false; resetPasswordForm(); }}>
+                                                Annuler
+                                            </ButtonComponent>
+                                        </div>
+                                    </div>
+                                {/if}
                             {/if}
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[500px]">
@@ -231,6 +424,49 @@
                 <section class="mb-4">
                     <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Préférences</h3>
                     <div class="grid gap-4">
+                        <!-- Changement de username -->
+                        <div class="grid gap-3 mb-4">
+                            {#if !editingUsername}
+                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                    <span class="font-bold text-gray-700">Nom d'utilisateur</span>
+                                    <div class="flex gap-3 items-center">
+                                        <span class="text-gray-600">{data.user.username}</span>
+                                        <ButtonComponent color="primary" variant="outlined" classe="ml-auto" onClick={startEditingUsername}>
+                                            Modifier
+                                        </ButtonComponent>
+                                    </div>
+                                </div>
+                            {:else}
+                                <div class="grid gap-3">
+                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                        <span class="font-bold text-gray-700">Nouveau nom d'utilisateur</span>
+                                        <TextFieldComponent 
+                                            label="" 
+                                            classe="nolabel" 
+                                            type="text" 
+                                            bind:value={newUsername}
+                                            error={usernameError}
+                                        />
+                                    </div>
+                                    <div class="flex gap-3 items-center">
+                                        <ButtonComponent 
+                                            color="primary" 
+                                            variant="raised" 
+                                            onClick={saveUsername}
+                                            disabled={!!usernameError || !newUsername || newUsername === data.user.username}
+                                        >
+                                            Enregistrer
+                                        </ButtonComponent>
+                                        <ButtonComponent color="secondary" variant="outlined" onClick={cancelEditingUsername}>
+                                            Annuler
+                                        </ButtonComponent>
+                                    </div>
+                                </div>
+                            {/if}
+                        </div>
+                        
+                        <div class="border-t border-gray-200 my-2"></div>
+                        
                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
                             <span class="font-bold text-gray-700">Langue</span>
                             <select 
@@ -273,16 +509,57 @@
             {:else if selectedSection==='modeles'}
                 <section class="mb-4">
                     <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Mes modèles</h3>
-                    <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
-                        <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
-                        <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
-                        <a 
-                            class="border rounded-md px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-50 transition-colors duration-200" 
-                            href="/models3D"
-                        >
-                            Voir les modèles
-                        </a>
-                    </div>
+                    
+                    {#if isLoadingModels}
+                        <div class="flex items-center justify-center min-h-[300px]">
+                            <div class="text-center">
+                                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                <p class="mt-4 text-gray-600">Chargement de vos modèles...</p>
+                            </div>
+                        </div>
+                    {:else if loadModelsError}
+                        <EmptyStateComponent 
+                            icon="❌"
+                            title="Erreur de chargement"
+                            description={loadModelsError}
+                        />
+                    {:else if userModels.length === 0}
+                        <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
+                            <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
+                            <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
+                            <a 
+                                class="border rounded-md px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-50 transition-colors duration-200" 
+                                href="/models3D"
+                            >
+                                Voir les modèles
+                            </a>
+                        </div>
+                    {:else}
+                        <ModelFiltersComponent 
+                            {searchQuery}
+                            {selectedCategory}
+                            categories={userModelCategories}
+                            onSearchChange={handleSearchChange}
+                            onCategoryChange={handleCategoryChange}
+                        />
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {#each filteredUserModels as model (model.id)}
+                                <ModelCardComponent 
+                                    {model}
+                                    onClick={() => openModelPopup(model)}
+                                />
+                            {/each}
+                        </div>
+                        
+                        {#if filteredUserModels.length === 0}
+                            <EmptyStateComponent 
+                                icon="🔍"
+                                title="Aucun modèle trouvé"
+                                description="Essayez de modifier vos critères de recherche"
+                            />
+                        {/if}
+                    {/if}
                 </section>
             {:else}
                 <section class="mb-4">
@@ -314,3 +591,12 @@
 </div>
 
 <ChangePasswordModal isOpen={showPwdModal} onclose={() => showPwdModal = false} onsaved={() => { showPwdModal = false; }} />
+
+<Model3DPopupComponent
+    isOpen={currentPopup.isOpen}
+    title={currentPopup.title}
+    category={currentPopup.category}
+    modelPath={currentPopup.modelPath}
+    on:close={closePopup}
+    on:download={downloadModel}
+/>

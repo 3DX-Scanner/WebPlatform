@@ -18,7 +18,10 @@ export const load: PageServerLoad = async ({ locals }) => {
     
     return {
         user: {
-            ...locals.user,
+            id: userFromDb.id,
+            email: userFromDb.email,
+            username: userFromDb.username,
+            createdAt: userFromDb.createdAt.toISOString(),
             hasPassword: userFromDb.password !== '' 
         }
     };
