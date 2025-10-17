@@ -413,7 +413,7 @@
                                         </div>
                                     </div>
                                 {/if}
-                            {#if !data.user.hasPassword}
+                            {:else}
                                 <!-- Utilisateur connecté via Google OAuth -->
                                 <div class="flex gap-4 bg-gradient-to-r from-indigo-400 to-purple-600 rounded-xl p-5 text-white items-start">
                                     <div class="text-2xl">🔒</div>
@@ -421,39 +421,6 @@
                                         <h4 class="m-0 text-white text-lg font-bold">Authentification Google</h4>
                                         <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
                                         <p class="m-0 text-white/85 italic">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
-                                    </div>
-                                </div>
-                            {:else if !editingPassword}
-                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                    <span class="font-bold text-gray-700 dark:text-gray-300">Mot de passe</span>
-                                    <ButtonComponent color="primary" variant="raised" classe="w-64" href="" onClick={() => { showPwdModal = true; }}>
-                                        Changer le mot de passe
-                                    </ButtonComponent>
-                                </div>
-                            {:else}
-                                <div class="grid gap-3">
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700 dark:text-gray-300">Mot de passe actuel</span>
-                                        <TextFieldComponent label="" classe="nolabel" type="password" bind:value={currentPassword} />
-                                    </div>
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700 dark:text-gray-300">Nouveau mot de passe</span>
-                                        <TextFieldComponent label="" classe="nolabel" type="password" bind:value={newPassword} />
-                                    </div>
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700 dark:text-gray-300">Confirmer le mot de passe</span>
-                                        <TextFieldComponent label="" classe="nolabel" type="password" bind:value={confirmPassword} />
-                                    </div>
-                                    {#if passwordError}
-                                        <div class="text-red-600 dark:text-red-400 font-semibold">{passwordError}</div>
-                                    {/if}
-                                    <div class="flex gap-3 items-center">
-                                        <ButtonComponent color="primary" variant="raised" href="" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
-                                            Enregistrer
-                                        </ButtonComponent>
-                                        <ButtonComponent color="secondary" variant="outlined" href="" onClick={() => { editingPassword = false; resetPasswordForm(); }}>
-                                            Annuler
-                                        </ButtonComponent>
                                     </div>
                                 </div>
                             {/if}
@@ -557,17 +524,6 @@
             {:else if selectedSection==='modeles'}
                 <section class="mb-4">
                     <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Mes modèles</h3>
-                    <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
-                        <p class="text-gray-500 dark:text-gray-400 font-semibold">Vous n'avez aucun modèle pour le moment</p>
-                        <p class="text-gray-400 dark:text-gray-500">Ouvrez la galerie des modèles 3D.</p>
-                        <a 
-                            class="border rounded-md px-3 py-2 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-200" 
-                            href="/models3D"
-                        >
-                            Voir les modèles
-                        </a>
-                    </div>
-                    <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Mes modèles</h3>
                     
                     {#if isLoadingModels}
                         <div class="flex items-center justify-center min-h-[300px]">
