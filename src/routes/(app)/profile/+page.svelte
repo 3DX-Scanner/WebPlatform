@@ -4,6 +4,10 @@
     import { onMount, tick } from 'svelte';
     import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
+    import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
+    import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
+    import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
+    import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
 
     export let data: {
     user: {
@@ -32,6 +36,22 @@
     let leftCardEl: HTMLDivElement;
     let rightCardEl: HTMLDivElement;
 
+    // Modèles 3D
+    let userModels: any[] = [];
+    let filteredUserModels: any[] = [];
+    let userModelCategories: string[] = [];
+    let searchQuery = '';
+    let selectedCategory = '';
+    let isLoadingModels = false;
+    let loadModelsError = '';
+
+    let currentPopup = {
+        isOpen: false,
+        title: '',
+        category: '',
+        modelPath: ''
+    };
+
     async function syncHeights() {
         if (!leftCardEl || !rightCardEl) return;
         await tick();
@@ -42,8 +62,98 @@
 
     $: selectedSection, syncHeights();
 
+    async function loadUserModels() {
+        isLoadingModels = true;
+        loadModelsError = '';
+        
+        try {
+            const response = await fetch('/api/user-models');
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors du chargement des modèles');
+            }
+            
+            userModels = data.models || [];
+            filteredUserModels = [...userModels];
+            isLoadingModels = false;
+        } catch (error) {
+            console.error('Erreur lors du chargement des modèles:', error);
+            loadModelsError = 'Impossible de charger vos modèles.';
+            isLoadingModels = false;
+        }
+    }
+
+    function filterAndSortUserModels(list: typeof userModels, search: string, categoryFilter: string) {
+        const normalize = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+        const q = normalize(search.trim());
+
+        let filtered = list.filter(model => {
+            const title = normalize(model.title);
+            const subtitle = normalize(model.subtitle);
+            const content = normalize(model.content);
+            const category = normalize(model.category);
+
+            const matchesSearch = q === '' || title.includes(q) || subtitle.includes(q) || content.includes(q) || category.includes(q);
+            const matchesCategory = !categoryFilter || model.category === categoryFilter;
+            return matchesSearch && matchesCategory;
+        });
+
+        return filtered;
+    }
+
+    $: filteredUserModels = filterAndSortUserModels(userModels, searchQuery, selectedCategory);
+    $: userModelCategories = Array.from(new Set(userModels.map((m) => m.category))).sort();
+
+    function handleSearchChange(value: string) {
+        searchQuery = value;
+    }
+
+    function handleCategoryChange(value: string) {
+        selectedCategory = value;
+    }
+
+    function openModelPopup(model: any) {
+        currentPopup = {
+            isOpen: true,
+            title: model.title,
+            category: model.category,
+            modelPath: model.modelPath
+        };
+    }
+
+    function closePopup() {
+        currentPopup.isOpen = false;
+    }
+
+    async function downloadModel(event: CustomEvent) {
+        const { modelPath, title } = event.detail;
+        try {
+            const response = await fetch(modelPath);
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${title}.glb`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            console.log(`Téléchargement de ${title} réussi`);
+        } catch (error) {
+            console.error('Erreur lors du téléchargement:', error);
+            alert('Erreur lors du téléchargement du modèle.');
+        }
+    }
+
     onMount(() => {
         syncHeights();
+        loadUserModels();
         const onResize = () => syncHeights();
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
@@ -399,16 +509,57 @@
             {:else if selectedSection==='modeles'}
                 <section class="mb-4">
                     <h3 class="m-0 mb-8 text-gray-900 text-center text-2xl">Mes modèles</h3>
-                    <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
-                        <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
-                        <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
-                        <a 
-                            class="border rounded-md px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-50 transition-colors duration-200" 
-                            href="/models3D"
-                        >
-                            Voir les modèles
-                        </a>
-                    </div>
+                    
+                    {#if isLoadingModels}
+                        <div class="flex items-center justify-center min-h-[300px]">
+                            <div class="text-center">
+                                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                <p class="mt-4 text-gray-600">Chargement de vos modèles...</p>
+                            </div>
+                        </div>
+                    {:else if loadModelsError}
+                        <EmptyStateComponent 
+                            icon="❌"
+                            title="Erreur de chargement"
+                            description={loadModelsError}
+                        />
+                    {:else if userModels.length === 0}
+                        <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
+                            <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
+                            <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
+                            <a 
+                                class="border rounded-md px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-50 transition-colors duration-200" 
+                                href="/models3D"
+                            >
+                                Voir les modèles
+                            </a>
+                        </div>
+                    {:else}
+                        <ModelFiltersComponent 
+                            {searchQuery}
+                            {selectedCategory}
+                            categories={userModelCategories}
+                            onSearchChange={handleSearchChange}
+                            onCategoryChange={handleCategoryChange}
+                        />
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {#each filteredUserModels as model (model.id)}
+                                <ModelCardComponent 
+                                    {model}
+                                    onClick={() => openModelPopup(model)}
+                                />
+                            {/each}
+                        </div>
+                        
+                        {#if filteredUserModels.length === 0}
+                            <EmptyStateComponent 
+                                icon="🔍"
+                                title="Aucun modèle trouvé"
+                                description="Essayez de modifier vos critères de recherche"
+                            />
+                        {/if}
+                    {/if}
                 </section>
             {:else}
                 <section class="mb-4">
@@ -440,3 +591,12 @@
 </div>
 
 <ChangePasswordModal isOpen={showPwdModal} onclose={() => showPwdModal = false} onsaved={() => { showPwdModal = false; }} />
+
+<Model3DPopupComponent
+    isOpen={currentPopup.isOpen}
+    title={currentPopup.title}
+    category={currentPopup.category}
+    modelPath={currentPopup.modelPath}
+    on:close={closePopup}
+    on:download={downloadModel}
+/>
