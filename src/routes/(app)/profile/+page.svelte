@@ -9,6 +9,8 @@
     import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
     import { theme, toggleTheme } from '$lib/stores/theme';
+    import { Pencil, Save, XCircle } from 'lucide-svelte';
+    import QRCode from 'qrcode';
 
     export let data: {
     user: {
@@ -51,11 +53,15 @@
         modelPath: ''
     };
 
+    // QR Code pour synchronisation scanner
+    let qrCodeDataUrl = '';
+    let qrCodeCanvas: HTMLCanvasElement;
+
     async function syncHeights() {
         if (!leftCardEl || !rightCardEl) return;
         await tick();
         const h = leftCardEl.offsetHeight;
-        const target = Math.max(320, h);
+        const target = Math.max(600, h);
         rightCardEl.style.height = target + 'px';
     }
 
@@ -150,11 +156,40 @@
         }
     }
 
+    async function generateQRCode() {
+        try {
+            // Générer un token de synchronisation basé sur l'ID utilisateur
+            const syncToken = `scanner-sync-${data.user.id}-${Date.now()}`;
+            const syncUrl = `${window.location.origin}/api/scanner-sync?token=${syncToken}`;
+            
+            if (qrCodeCanvas) {
+                await QRCode.toCanvas(qrCodeCanvas, syncUrl, {
+                    width: 300,
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#FFFFFF'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Erreur lors de la génération du QR code:', error);
+        }
+    }
+
     onMount(() => {
         syncHeights();
         loadUserModels();
         const onResize = () => syncHeights();
         window.addEventListener('resize', onResize);
+        
+        // Générer le QR code après le rendu si la section est sélectionnée
+        tick().then(() => {
+            if (selectedSection === 'securite' && qrCodeCanvas) {
+                generateQRCode();
+            }
+        });
+        
         return () => window.removeEventListener('resize', onResize);
     });
 
@@ -219,6 +254,14 @@
 
     function handleSectionChange(section: 'securite' | 'preferences' | 'modeles' | 'abonnement') {
         selectedSection = section;
+        // Générer le QR code si on passe à la section synchronisation
+        if (section === 'securite') {
+            tick().then(() => {
+                if (qrCodeCanvas) {
+                    generateQRCode();
+                }
+            });
+        }
     }
 
     function handleLanguageChange(lang: 'fr' | 'en') {
@@ -329,9 +372,9 @@
 </script>
 
 <div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4 bg-gray-50 dark:bg-gray-900">
-    <div class="w-full max-w-6xl mx-auto grid gap-5 grid-cols-[340px_1fr] items-stretch">
+    <div class="w-full max-w-7xl mx-auto grid gap-5 grid-cols-[340px_1fr] items-stretch">
         <aside>
-            <div class="bg-white dark:bg-gray-800 backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full" bind:this={leftCardEl}>
+            <div class="bg-white dark:bg-gray-800 backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 min-h-[650px]" bind:this={leftCardEl}>
                 <div class="w-24 h-24 rounded-full grid place-items-center bg-gray-700 text-white text-2xl font-bold">
                     {data.user.email.charAt(0).toUpperCase()}
                 </div>
@@ -343,7 +386,7 @@
 
                 <ul class="w-full grid gap-3 mt-4" role="tablist">
                     {#each [
-                        { id: 'securite', label: 'Sécurité du compte' },
+                        { id: 'securite', label: 'Synchronisation Scanner' },
                         { id: 'preferences', label: 'Préférences' },
                         { id: 'modeles', label: 'Mes modèles' },
                         { id: 'abonnement', label: 'Abonnement' }
@@ -375,33 +418,109 @@
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
             {#if selectedSection==='securite'}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Sécurité du compte</h3>
-                    <div class="flex flex-col items-center gap-5">
-                        <div class="grid gap-3 w-full max-w-[500px]">
+                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Synchronisation Scanner</h3>
+                    <div class="flex flex-col items-center justify-center gap-5 min-h-[400px]">
+                        <div class="flex flex-col items-center gap-4">
+                            <p class="text-gray-600 dark:text-gray-400 text-center mb-4">
+                                Scannez ce QR code avec votre application Scanner 3D pour synchroniser votre appareil
+                            </p>
+                            <div class="bg-white p-4 rounded-lg shadow-lg">
+                                <canvas bind:this={qrCodeCanvas} class="w-[300px] h-[300px]"></canvas>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
+                                Le QR code expire après utilisation
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            {:else if selectedSection==='preferences'}
+                <section class="mb-4">
+                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Préférences</h3>
+                    <div class="grid gap-4">
+                        <!-- Changement de username -->
+                        <div class="grid gap-3 mb-4">
+                            {#if !editingUsername}
+                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                    <span class="font-bold text-gray-700">Nom d'utilisateur</span>
+                                    <div class="flex gap-3 items-center">
+                                        <span class="text-gray-600">{data.user.username}</span>
+                                        <ButtonComponent color="primary" variant="outlined" classe="ml-auto" onClick={startEditingUsername}>
+                                            <Pencil size={16} />
+                                        </ButtonComponent>
+                                    </div>
+                                </div>
+                            {:else}
+                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                    <span class="font-bold text-gray-700 dark:text-gray-300">Nouveau nom d'utilisateur</span>
+                                    <div class="flex gap-6 items-center">
+                                        <div class="flex-1 pt-4">
+                                            <TextFieldComponent 
+                                                label="" 
+                                                classe="nolabel mb-0" 
+                                                type="text" 
+                                                bind:value={newUsername}
+                                                error={usernameError}
+                                            />
+                                        </div>
+                                        <div class="flex gap-2 items-center">
+                                            <ButtonComponent color="primary" variant="outlined" classe="!border-red-500 !text-red-600 hover:!bg-red-500 hover:!text-white dark:!border-red-400 dark:!text-red-400 dark:hover:!bg-red-400 dark:hover:!text-white" href="" onClick={cancelEditingUsername}>
+                                                <XCircle size={16} />
+                                            </ButtonComponent>
+                                            <ButtonComponent 
+                                                color="primary" 
+                                                variant="outlined" 
+                                                classe="!border-green-500 !text-green-600 hover:!bg-green-500 hover:!text-white dark:!border-green-400 dark:!text-green-400 dark:hover:!bg-green-400 dark:hover:!text-white" 
+                                                href="" 
+                                                onClick={saveUsername}
+                                                disabled={!!usernameError || !newUsername || newUsername === data.user.username}
+                                            >
+                                                <Save size={16} />
+                                            </ButtonComponent>
+                                        </div>
+                                    </div>
+                                </div>
+                                {#if usernameError}
+                                    <div class="col-start-2 text-red-600 dark:text-red-400 font-semibold text-sm">{usernameError}</div>
+                                {/if}
+                            {/if}
+                        </div>
+                        
+                        <!-- Mot de passe -->
+                        <div class="grid gap-3 mb-4">
                             {#if data.user.hasPassword}
                                 {#if !editingPassword}
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Mot de passe</span>
-                                        <ButtonComponent color="primary" variant="raised" classe="w-64" href="" onClick={() => { showPwdModal = true; }}>
-                                            Changer le mot de passe
-                                        </ButtonComponent>
+                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                        <span class="font-bold text-gray-700 dark:text-gray-300">Mot de passe</span>
+                                        <div class="flex gap-3 items-center">
+                                            <span class="text-gray-600 dark:text-gray-400 flex gap-1 items-center">
+                                                <span class="w-2 h-2 rounded-full bg-gray-600 dark:bg-gray-400"></span>
+                                                <span class="w-2 h-2 rounded-full bg-gray-600 dark:bg-gray-400"></span>
+                                                <span class="w-2 h-2 rounded-full bg-gray-600 dark:bg-gray-400"></span>
+                                                <span class="w-2 h-2 rounded-full bg-gray-600 dark:bg-gray-400"></span>
+                                                <span class="w-2 h-2 rounded-full bg-gray-600 dark:bg-gray-400"></span>
+                                                <span class="w-2 h-2 rounded-full bg-gray-600 dark:bg-gray-400"></span>
+                                            </span>
+                                            <ButtonComponent color="primary" variant="outlined" classe="ml-auto" href="" onClick={() => { showPwdModal = true; }}>
+                                                <Pencil size={16} />
+                                            </ButtonComponent>
+                                        </div>
                                     </div>
                                 {:else}
                                     <div class="grid gap-3">
                                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <span class="font-bold text-gray-700">Mot de passe actuel</span>
+                                            <span class="font-bold text-gray-700 dark:text-gray-300">Mot de passe actuel</span>
                                             <TextFieldComponent label="" classe="nolabel" type="password" bind:value={currentPassword} />
                                         </div>
                                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <span class="font-bold text-gray-700">Nouveau mot de passe</span>
+                                            <span class="font-bold text-gray-700 dark:text-gray-300">Nouveau mot de passe</span>
                                             <TextFieldComponent label="" classe="nolabel" type="password" bind:value={newPassword} />
                                         </div>
                                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <span class="font-bold text-gray-700">Confirmer le mot de passe</span>
+                                            <span class="font-bold text-gray-700 dark:text-gray-300">Confirmer le mot de passe</span>
                                             <TextFieldComponent label="" classe="nolabel" type="password" bind:value={confirmPassword} />
                                         </div>
                                         {#if passwordError}
-                                            <div class="text-red-600 font-semibold">{passwordError}</div>
+                                            <div class="text-red-600 dark:text-red-400 font-semibold">{passwordError}</div>
                                         {/if}
                                         <div class="flex gap-3 items-center">
                                             <ButtonComponent color="primary" variant="raised" href="" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
@@ -425,73 +544,13 @@
                                 </div>
                             {/if}
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[500px]">
-                            <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                <span class="font-bold text-gray-700 dark:text-gray-300">Double authentification</span>
-                                <input type="text" value="Désactivée" disabled class="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            {:else if selectedSection==='preferences'}
-                <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Préférences</h3>
-                    <div class="grid gap-4">
-                        <!-- Changement de username -->
-                        <div class="grid gap-3 mb-4">
-                            {#if !editingUsername}
-                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
-                                    <span class="font-bold text-gray-700">Nom d'utilisateur</span>
-                                    <div class="flex gap-3 items-center">
-                                        <span class="text-gray-600">{data.user.username}</span>
-                                        <ButtonComponent color="primary" variant="outlined" classe="ml-auto" onClick={startEditingUsername}>
-                                            Modifier
-                                        </ButtonComponent>
-                                    </div>
-                                </div>
-                            {:else}
-                                <div class="grid gap-3">
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
-                                        <span class="font-bold text-gray-700">Nouveau nom d'utilisateur</span>
-                                        <TextFieldComponent 
-                                            label="" 
-                                            classe="nolabel" 
-                                            type="text" 
-                                            bind:value={newUsername}
-                                            error={usernameError}
-                                        />
-                                    </div>
-                                    <div class="flex gap-3 items-center">
-                                        <ButtonComponent 
-                                            color="primary" 
-                                            variant="raised" 
-                                            onClick={saveUsername}
-                                            disabled={!!usernameError || !newUsername || newUsername === data.user.username}
-                                        >
-                                            Enregistrer
-                                        </ButtonComponent>
-                                        <ButtonComponent color="secondary" variant="outlined" onClick={cancelEditingUsername}>
-                                            Annuler
-                                        </ButtonComponent>
-                                    </div>
-                                </div>
-                            {/if}
+                        
+                        <!-- Double authentification -->
+                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-4">
+                            <span class="font-bold text-gray-700 dark:text-gray-300">Double authentification</span>
+                            <input type="text" value="Désactivée" disabled class="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" />
                         </div>
                         
-                        <div class="border-t border-gray-200 my-2"></div>
-                        
-                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                            <span class="font-bold text-gray-700 dark:text-gray-300">Langue</span>
-                            <select 
-                                id="lang-select" 
-                                value={language}
-                                onchange={(e) => handleLanguageChange((e.target as HTMLSelectElement).value as 'fr' | 'en')}
-                                class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200"
-                            >
-                                <option value="fr">Français</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
                             <span class="font-bold text-gray-700 dark:text-gray-300">Thème</span>
                             <div class="inline-flex gap-2 bg-gray-100 dark:bg-gray-700 p-1.5 rounded-lg" role="tablist" aria-label="Theme">

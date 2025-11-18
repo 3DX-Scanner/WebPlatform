@@ -1,24 +1,46 @@
 <script lang="ts">
+    import { Eye, EyeOff } from 'lucide-svelte';
+    
     let { variant = 'outlined', value = $bindable(''), label = '', required = false, type = 'text', placeholder = '', disabled = false, error = '', helperText = '', classe = '' } = $props();
     let isFocused = $state(false);
+    let showPassword = $state(false);
     const hasValue = $derived(value && value.length > 0);
+    const isPassword = $derived(type === 'password');
+    const inputType = $derived(isPassword && showPassword ? 'text' : type);
 </script>
 
 <div class={`relative w-full mb-4 ${classe}`}>
-    <input 
-        id={label}
-        class={`w-full ${variant === 'outlined' ? 'border border-gray-300 dark:border-gray-600' : variant === 'filled' ? 'border border-transparent bg-gray-50 dark:bg-gray-700' : 'border-b border-gray-300 dark:border-gray-600'} px-3 py-2 text-gray-900 dark:text-white placeholder-transparent bg-white dark:bg-gray-800 ${disabled ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' : ''} ${error ? 'border-red-500 dark:border-red-400' : ''}`}
-        style="outline: none !important; box-shadow: none !important;"
-        onfocus={() => isFocused = true}
-        onblur={() => isFocused = false}
-        {type}
-        bind:value
-        {required}
-        placeholder={placeholder || ''}
-        {disabled}
-        aria-invalid={error ? 'true' : 'false'}
-        aria-describedby={label ? `${label}-help` : undefined}
-    />
+    <div class="relative">
+        <input 
+            id={label}
+            class={`w-full ${variant === 'outlined' ? 'border border-gray-300 dark:border-gray-600' : variant === 'filled' ? 'border border-transparent bg-gray-50 dark:bg-gray-700' : 'border-b border-gray-300 dark:border-gray-600'} ${isPassword ? 'pr-10' : ''} px-3 py-2 text-gray-900 dark:text-white placeholder-transparent bg-white dark:bg-gray-800 ${disabled ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' : ''} ${error ? 'border-red-500 dark:border-red-400' : ''}`}
+            style="outline: none !important; box-shadow: none !important;"
+            onfocus={() => isFocused = true}
+            onblur={() => isFocused = false}
+            type={inputType}
+            bind:value
+            {required}
+            placeholder={placeholder || ''}
+            {disabled}
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={label ? `${label}-help` : undefined}
+        />
+        {#if isPassword}
+            <button
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition-colors"
+                onclick={() => showPassword = !showPassword}
+                tabindex="-1"
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
+                {#if showPassword}
+                    <EyeOff size={20} />
+                {:else}
+                    <Eye size={20} />
+                {/if}
+            </button>
+        {/if}
+    </div>
     {#if label}
         <label 
             for={label} 
