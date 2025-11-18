@@ -231,7 +231,17 @@
 
           const fov = camera.fov * (Math.PI / 180);
           const distance = (safeMax / 2) / Math.tan(fov / 2);
-          camera.position.set(0, 0, distance * 0.7);
+          
+          // Rotation initiale pour mieux centrer la vue (azimuth et polar)
+          const azimuth = Math.PI / 4; // 45 degrés en rotation horizontale
+          const polar = Math.PI / 3; // 60 degrés en rotation verticale
+          const cameraDistance = distance * 1.0; // Dézoomé un peu plus
+          camera.position.set(
+            cameraDistance * Math.sin(polar) * Math.cos(azimuth),
+            cameraDistance * Math.cos(polar),
+            cameraDistance * Math.sin(polar) * Math.sin(azimuth)
+          );
+          
           controls.target.set(0, 0, 0);
           controls.minDistance = 0.1;
           controls.maxDistance = distance * 3;
