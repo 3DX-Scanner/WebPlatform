@@ -21,6 +21,8 @@
         modelPath: ''
     };
 
+    let selectedModelId: number | null = null;
+
     let models: any[] = [];
     let filteredModels: any[] = [];
     let categories: string[] = [];
@@ -114,6 +116,7 @@
     }
 
     function openModelPopup(model: any) {
+        selectedModelId = model.id;
         currentPopup = {
             isOpen: true,
             title: model.title,
@@ -124,6 +127,7 @@
 
     function closePopup() {
         currentPopup.isOpen = false;
+        selectedModelId = null;
     }
 
     async function downloadModel(event: CustomEvent) {
@@ -181,6 +185,7 @@
                 {#each filteredModels as model (model.id)}
                     <ModelCardComponent 
                         {model}
+                        isSelected={selectedModelId === model.id && currentPopup.isOpen}
                         onClick={() => openModelPopup(model)}
                     />
                 {/each}

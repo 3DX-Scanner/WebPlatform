@@ -10,13 +10,15 @@
     width = 600, 
     height = 600, 
     autoRotate = false, 
-    showControls = true 
+    showControls = true,
+    noCard = false
   }: {
     modelPath: string;
     width?: number;
     height?: number;
     autoRotate?: boolean;
     showControls?: boolean;
+    noCard?: boolean;
   } = $props();
 
   let container: HTMLElement;
@@ -25,6 +27,8 @@
   let renderer: THREE.WebGLRenderer;
   let controls: OrbitControls;
   let model: THREE.Group;
+  let gridHelper: THREE.GridHelper | null = null;
+  let axesGroup: THREE.Group | null = null;
   let isLoading = $state(true);
   let loadingProgress = $state(0);
   let isFullscreen = $state(false);
@@ -63,6 +67,11 @@
     const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
     directionalLight2.position.set(-10, -10, -5);
     scene.add(directionalLight2);
+
+    // Ajouter une grille de référence
+    // Couleurs adaptées pour être visibles sur fond clair et sombre
+    gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
+    scene.add(gridHelper);
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -134,13 +143,95 @@
           const maxDim = Math.max(size.x, size.y, size.z);
           const safeMax = (!isFinite(maxDim) || maxDim <= 0) ? 1 : maxDim;
 
-          model.position.set(-center.x, -center.y, -center.z);
-          const scale = 2.5 / safeMax;
+          const scale = 4.5 / safeMax;
           model.scale.setScalar(scale);
+          
+          // Recalculer la bounding box après le scale pour positionner correctement
+          const scaledBox = new THREE.Box3().setFromObject(model);
+          const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+          const scaledMin = scaledBox.min;
+          
+          // Repositionner le modèle pour qu'il soit posé sur la grille (Y=0)
+          // Centrer en X et Z, mais placer le bas du modèle sur Y=0
+          model.position.set(-scaledCenter.x, -scaledMin.y, -scaledCenter.z);
+
+          // Créer des axes X, Y, Z personnalisés avec des couleurs et épaisseurs spécifiques
+          const scaledSize = scaledBox.getSize(new THREE.Vector3());
+          const axesSize = Math.max(scaledSize.x, scaledSize.y, scaledSize.z) * 0.5;
+          
+          if (axesGroup) {
+            scene.remove(axesGroup);
+            axesGroup.traverse((child) => {
+              if (child instanceof THREE.ArrowHelper) {
+                // ArrowHelper contient une ligne et un cône, nettoyer leurs ressources
+                if (child.line) {
+                  child.line.geometry.dispose();
+                  if (child.line.material instanceof THREE.Material) {
+                    child.line.material.dispose();
+                  }
+                }
+                if (child.cone) {
+                  child.cone.geometry.dispose();
+                  if (child.cone.material instanceof THREE.Material) {
+                    child.cone.material.dispose();
+                  }
+                }
+              } else if (child instanceof THREE.Mesh) {
+                child.geometry.dispose();
+                if (child.material instanceof THREE.Material) {
+                  child.material.dispose();
+                }
+              }
+            });
+          }
+          
+          axesGroup = new THREE.Group();
+          
+          // Créer les 3 axes avec des flèches (ArrowHelper) partant du centre
+          const axisLength = axesSize;
+          const arrowHeadLength = axisLength * 0.15; // 15% de la longueur pour la pointe
+          const arrowHeadWidth = axisLength * 0.08; // 8% de la longueur pour la largeur de la pointe
+          const arrowShaftRadius = axisLength * 0.02; // 2% pour le rayon du cylindre
+          
+          // Axe X (Rouge) - flèche pointant vers +X
+          const xArrow = new THREE.ArrowHelper(
+            new THREE.Vector3(1, 0, 0), // Direction X
+            new THREE.Vector3(0, 0, 0), // Origine au centre
+            axisLength, // Longueur
+            0xff0000, // Couleur rouge
+            arrowHeadLength,
+            arrowHeadWidth
+          );
+          axesGroup.add(xArrow);
+          
+          // Axe Y (Vert) - flèche pointant vers +Y
+          const yArrow = new THREE.ArrowHelper(
+            new THREE.Vector3(0, 1, 0), // Direction Y
+            new THREE.Vector3(0, 0, 0), // Origine au centre
+            axisLength, // Longueur
+            0x00ff00, // Couleur verte
+            arrowHeadLength,
+            arrowHeadWidth
+          );
+          axesGroup.add(yArrow);
+          
+          // Axe Z (Bleu) - flèche pointant vers +Z
+          const zArrow = new THREE.ArrowHelper(
+            new THREE.Vector3(0, 0, 1), // Direction Z
+            new THREE.Vector3(0, 0, 0), // Origine au centre
+            axisLength, // Longueur
+            0x0000ff, // Couleur bleue
+            arrowHeadLength,
+            arrowHeadWidth
+          );
+          axesGroup.add(zArrow);
+          
+          axesGroup.position.copy(model.position);
+          scene.add(axesGroup);
 
           const fov = camera.fov * (Math.PI / 180);
           const distance = (safeMax / 2) / Math.tan(fov / 2);
-          camera.position.set(0, 0, distance * 1.5);
+          camera.position.set(0, 0, distance * 0.7);
           controls.target.set(0, 0, 0);
           controls.minDistance = 0.1;
           controls.maxDistance = distance * 3;
@@ -196,13 +287,95 @@
               const maxDim = Math.max(size.x, size.y, size.z);
               const safeMax = (!isFinite(maxDim) || maxDim <= 0) ? 1 : maxDim;
 
-              model.position.set(-center.x, -center.y, -center.z);
-              const scale = 2.5 / safeMax;
+              const scale = 4.5 / safeMax;
               model.scale.setScalar(scale);
+              
+              // Recalculer la bounding box après le scale pour positionner correctement
+              const scaledBox = new THREE.Box3().setFromObject(model);
+              const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+              const scaledMin = scaledBox.min;
+              
+              // Repositionner le modèle pour qu'il soit posé sur la grille (Y=0)
+              // Centrer en X et Z, mais placer le bas du modèle sur Y=0
+              model.position.set(-scaledCenter.x, -scaledMin.y, -scaledCenter.z);
+
+              // Créer des axes X, Y, Z personnalisés avec des couleurs et épaisseurs spécifiques
+              const scaledSize = scaledBox.getSize(new THREE.Vector3());
+              const axesSize = Math.max(scaledSize.x, scaledSize.y, scaledSize.z) * 0.5;
+              
+              if (axesGroup) {
+                scene.remove(axesGroup);
+                axesGroup.traverse((child) => {
+                  if (child instanceof THREE.ArrowHelper) {
+                    // ArrowHelper contient une ligne et un cône, nettoyer leurs ressources
+                    if (child.line) {
+                      child.line.geometry.dispose();
+                      if (child.line.material instanceof THREE.Material) {
+                        child.line.material.dispose();
+                      }
+                    }
+                    if (child.cone) {
+                      child.cone.geometry.dispose();
+                      if (child.cone.material instanceof THREE.Material) {
+                        child.cone.material.dispose();
+                      }
+                    }
+                  } else if (child instanceof THREE.Mesh) {
+                    child.geometry.dispose();
+                    if (child.material instanceof THREE.Material) {
+                      child.material.dispose();
+                    }
+                  }
+                });
+              }
+              
+              axesGroup = new THREE.Group();
+              
+              // Créer les 3 axes avec des flèches (ArrowHelper) partant du centre
+              const axisLength = axesSize;
+              const arrowHeadLength = axisLength * 0.15; // 15% de la longueur pour la pointe
+              const arrowHeadWidth = axisLength * 0.08; // 8% de la longueur pour la largeur de la pointe
+              const arrowShaftRadius = axisLength * 0.02; // 2% pour le rayon du cylindre
+              
+              // Axe X (Rouge) - flèche pointant vers +X
+              const xArrow = new THREE.ArrowHelper(
+                new THREE.Vector3(1, 0, 0), // Direction X
+                new THREE.Vector3(0, 0, 0), // Origine au centre
+                axisLength, // Longueur
+                0xff0000, // Couleur rouge
+                arrowHeadLength,
+                arrowHeadWidth
+              );
+              axesGroup.add(xArrow);
+              
+              // Axe Y (Vert) - flèche pointant vers +Y
+              const yArrow = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 1, 0), // Direction Y
+                new THREE.Vector3(0, 0, 0), // Origine au centre
+                axisLength, // Longueur
+                0x00ff00, // Couleur verte
+                arrowHeadLength,
+                arrowHeadWidth
+              );
+              axesGroup.add(yArrow);
+              
+              // Axe Z (Bleu) - flèche pointant vers +Z
+              const zArrow = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 0, 1), // Direction Z
+                new THREE.Vector3(0, 0, 0), // Origine au centre
+                axisLength, // Longueur
+                0x0000ff, // Couleur bleue
+                arrowHeadLength,
+                arrowHeadWidth
+              );
+              axesGroup.add(zArrow);
+              
+              axesGroup.position.copy(model.position);
+              scene.add(axesGroup);
 
               const fov = camera.fov * (Math.PI / 180);
               const distance = (safeMax / 2) / Math.tan(fov / 2);
-              camera.position.set(0, 0, distance * 1.5);
+              camera.position.set(0, 0, distance * 0.7);
               controls.target.set(0, 0, 0);
               controls.minDistance = 0.1;
               controls.maxDistance = distance * 3;
@@ -239,6 +412,34 @@
           }
         }
       });
+    }
+
+    // Supprimer l'ancien axesGroup s'il existe
+    if (axesGroup) {
+      scene.remove(axesGroup);
+      axesGroup.traverse((child) => {
+        if (child instanceof THREE.ArrowHelper) {
+          // ArrowHelper contient une ligne et un cône, nettoyer leurs ressources
+          if (child.line) {
+            child.line.geometry.dispose();
+            if (child.line.material instanceof THREE.Material) {
+              child.line.material.dispose();
+            }
+          }
+          if (child.cone) {
+            child.cone.geometry.dispose();
+            if (child.cone.material instanceof THREE.Material) {
+              child.cone.material.dispose();
+            }
+          }
+        } else if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (child.material instanceof THREE.Material) {
+            child.material.dispose();
+          }
+        }
+      });
+      axesGroup = null;
     }
 
     isLoading = true;
@@ -325,15 +526,15 @@
 </script>
 
 <div 
-  class="rounded-xl overflow-hidden shadow-2xl bg-gray-100 relative" 
+  class="{noCard ? 'rounded-xl overflow-hidden shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] relative mx-auto' : 'rounded-xl overflow-hidden shadow-2xl bg-gray-100 relative'}" 
   bind:this={container} 
   style="width: {width}px; height: {height}px;"
 >
   {#if isLoading}
-    <div class="absolute inset-0 bg-gray-100/90 flex flex-col items-center justify-center z-10">
-      <div class="w-10 h-10 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-      <div class="text-lg text-gray-800 mb-4">{loadingMessage}</div>
-      <div class="w-52 h-1 bg-gray-300 rounded-sm overflow-hidden">
+    <div class="absolute inset-0 {noCard ? 'bg-white/90 dark:bg-gray-800/90' : 'bg-gray-100/90'} flex flex-col items-center justify-center z-10">
+      <div class="w-10 h-10 border-4 {noCard ? 'border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400' : 'border-gray-300 border-t-blue-600'} rounded-full animate-spin mb-4"></div>
+      <div class="text-lg {noCard ? 'text-gray-800 dark:text-white' : 'text-gray-800'} mb-4">{loadingMessage}</div>
+      <div class="w-52 h-1 {noCard ? 'bg-gray-300 dark:bg-gray-600' : 'bg-gray-300'} rounded-sm overflow-hidden">
         <div 
           class="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-300 ease-out" 
           style="width: {loadingProgress}%"
