@@ -152,8 +152,6 @@
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
-            console.log(`Téléchargement de ${title} réussi`);
         } catch (error) {
             console.error('Erreur lors du téléchargement:', error);
             alert('Erreur lors du téléchargement du modèle. Vérifiez que le fichier existe.');

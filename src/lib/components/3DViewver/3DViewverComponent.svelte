@@ -131,32 +131,7 @@
     const scaledSize = scaledBox.getSize(new THREE.Vector3());
     const axesSize = Math.max(scaledSize.x, scaledSize.y, scaledSize.z) * 0.5;
     
-    // Nettoyer l'ancien axesGroup s'il existe
-    if (axesGroup) {
-      scene.remove(axesGroup);
-      axesGroup.traverse((child) => {
-        if (child instanceof THREE.ArrowHelper) {
-          if (child.line) {
-            child.line.geometry.dispose();
-            if (child.line.material instanceof THREE.Material) {
-              child.line.material.dispose();
-            }
-          }
-          if (child.cone) {
-            child.cone.geometry.dispose();
-            if (child.cone.material instanceof THREE.Material) {
-              child.cone.material.dispose();
-            }
-          }
-        } else if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
-          if (child.material instanceof THREE.Material) {
-            child.material.dispose();
-          }
-        }
-      });
-    }
-    
+    disposeAxesGroup();
     axesGroup = new THREE.Group();
     
     const axisLength = axesSize;
@@ -221,40 +196,38 @@
     animate();
   }
 
+  // Matériau par défaut pour les modèles
+  const createDefaultMaterial = () => new THREE.MeshPhongMaterial({
+    color: 0x888888,
+    side: THREE.DoubleSide,
+    flatShading: false,
+    shininess: 30,
+    specular: 0x222222
+  });
+
+  // Fonction générique pour gérer les erreurs de chargement
+  const handleLoadError = (format: string, error?: any) => {
+    if (error) {
+      console.error(`Erreur lors du chargement du fichier ${format}:`, error);
+    }
+    isLoading = false;
+  };
+
   function loadPLYModel() {
     const loader = new PLYLoader();
-
-    if (!modelPath || !modelPath.toLowerCase().endsWith('.ply')) {
-      isLoading = false;
-      return;
-    }
-
     loader.load(
       modelPath,
       (geometry) => {
         try {
-          // Créer un groupe pour contenir le modèle
           const modelGroup = new THREE.Group();
           
-          // Calculer les normales si elles n'existent pas
           if (!geometry.attributes.normal) {
             geometry.computeVertexNormals();
           }
 
-          // Créer un matériau de mesh normal avec un rendu plus réaliste
-          const meshMaterial = new THREE.MeshPhongMaterial({
-            color: 0x888888,
-            side: THREE.DoubleSide,
-            flatShading: false,
-            shininess: 30,
-            specular: 0x222222
-          });
-
-          // Créer la mesh principale
-          const mesh = new THREE.Mesh(geometry, meshMaterial);
+          const mesh = new THREE.Mesh(geometry, createDefaultMaterial());
           modelGroup.add(mesh);
 
-          // Si le modèle n'a pas de faces (seulement des points), créer aussi des points
           if (!geometry.attributes.normal && geometry.attributes.position) {
             const pointsMaterial = new THREE.PointsMaterial({
               color: 0x666666,
@@ -267,26 +240,16 @@
 
           setupModel(modelGroup);
         } catch (error) {
-          console.error('Erreur lors du chargement du modèle PLY:', error);
-          isLoading = false;
+          handleLoadError('PLY', error);
         }
       },
       undefined,
-      (error) => {
-        console.error('Erreur lors du chargement du fichier PLY:', error);
-        isLoading = false;
-      }
+      (error) => handleLoadError('PLY', error)
     );
   }
 
   function loadGLBModel() {
     const loader = new GLTFLoader();
-
-    if (!modelPath || !modelPath.toLowerCase().endsWith('.glb')) {
-      isLoading = false;
-      return;
-    }
-
     const fileLoader = new THREE.FileLoader();
     fileLoader.setResponseType('arraybuffer');
     fileLoader.load(
@@ -296,76 +259,51 @@
           const u8 = new Uint8Array(data as ArrayBuffer);
           const headerText = new TextDecoder().decode(u8.subarray(0, 4));
           if (headerText !== 'glTF') {
-            isLoading = false;
+            handleLoadError('GLB');
             return;
           }
 
           loader.parse(
             data as ArrayBuffer,
             '',
-            (gltf) => {
-              setupModel(gltf.scene);
-            },
-            () => { isLoading = false; }
+            (gltf) => setupModel(gltf.scene),
+            () => handleLoadError('GLB')
           );
         } catch {
-          isLoading = false;
+          handleLoadError('GLB');
         }
       },
       undefined,
-      () => { isLoading = false; }
+      () => handleLoadError('GLB')
     );
   }
 
   function loadOBJModel() {
     const loader = new OBJLoader();
-
-    if (!modelPath || !modelPath.toLowerCase().endsWith('.obj')) {
-      isLoading = false;
-      return;
-    }
-
     loader.load(
       modelPath,
       (object) => {
         try {
-          // Appliquer un matériau par défaut si nécessaire
           object.traverse((child) => {
             if (child instanceof THREE.Mesh) {
               if (!child.material || (child.material as THREE.Material).type === 'MeshBasicMaterial') {
-                child.material = new THREE.MeshPhongMaterial({
-                  color: 0x888888,
-                  side: THREE.DoubleSide,
-                  flatShading: false,
-                  shininess: 30,
-                  specular: 0x222222
-                });
+                child.material = createDefaultMaterial();
               }
             }
           });
 
           setupModel(object, 0.08);
         } catch (error) {
-          console.error('Erreur lors du chargement du modèle OBJ:', error);
-          isLoading = false;
+          handleLoadError('OBJ', error);
         }
       },
       undefined,
-      (error) => {
-        console.error('Erreur lors du chargement du fichier OBJ:', error);
-        isLoading = false;
-      }
+      (error) => handleLoadError('OBJ', error)
     );
   }
 
   function loadSTLModel() {
     const loader = new STLLoader();
-
-    if (!modelPath || !modelPath.toLowerCase().endsWith('.stl')) {
-      isLoading = false;
-      return;
-    }
-
     loader.load(
       modelPath,
       (geometry) => {
@@ -373,184 +311,144 @@
           const modelGroup = new THREE.Group();
           geometry.computeVertexNormals();
           
-          const material = new THREE.MeshPhongMaterial({
-            color: 0x888888,
-            side: THREE.DoubleSide,
-            flatShading: false,
-            shininess: 30,
-            specular: 0x222222
-          });
-
-          const mesh = new THREE.Mesh(geometry, material);
+          const mesh = new THREE.Mesh(geometry, createDefaultMaterial());
           modelGroup.add(mesh);
 
           setupModel(modelGroup);
         } catch (error) {
-          console.error('Erreur lors du chargement du modèle STL:', error);
-          isLoading = false;
+          handleLoadError('STL', error);
         }
       },
       undefined,
-      (error) => {
-        console.error('Erreur lors du chargement du fichier STL:', error);
-        isLoading = false;
-      }
+      (error) => handleLoadError('STL', error)
     );
   }
 
   function loadFBXModel() {
     const loader = new FBXLoader();
-
-    if (!modelPath || !modelPath.toLowerCase().endsWith('.fbx')) {
-      isLoading = false;
-      return;
-    }
-
     loader.load(
       modelPath,
       (object) => {
         try {
           setupModel(object);
         } catch (error) {
-          console.error('Erreur lors du chargement du modèle FBX:', error);
-          isLoading = false;
+          handleLoadError('FBX', error);
         }
       },
       undefined,
-      (error) => {
-        console.error('Erreur lors du chargement du fichier FBX:', error);
-        isLoading = false;
-      }
+      (error) => handleLoadError('FBX', error)
     );
   }
 
   function loadDAEModel() {
     const loader = new ColladaLoader();
-
-    if (!modelPath || !modelPath.toLowerCase().endsWith('.dae')) {
-      isLoading = false;
-      return;
-    }
-
     loader.load(
       modelPath,
       (collada) => {
         try {
           setupModel(collada.scene);
         } catch (error) {
-          console.error('Erreur lors du chargement du modèle DAE:', error);
-          isLoading = false;
+          handleLoadError('DAE', error);
         }
       },
       undefined,
-      (error) => {
-        console.error('Erreur lors du chargement du fichier DAE:', error);
-        isLoading = false;
-      }
+      (error) => handleLoadError('DAE', error)
     );
-  }
-
-  function loadX3DModel() {
-    // X3DLoader n'est pas disponible dans Three.js, utiliser un message d'erreur
-    isLoading = false;
-    loadingMessage = 'Le format X3D nécessite une conversion préalable vers GLB, GLTF, PLY, OBJ, STL, FBX ou DAE';
   }
 
   function loadGLTFModel() {
     const loader = new GLTFLoader();
-
-    if (!modelPath || !modelPath.toLowerCase().endsWith('.gltf')) {
-      isLoading = false;
-      return;
-    }
-
     loader.load(
       modelPath,
       (gltf) => {
         try {
           setupModel(gltf.scene);
         } catch (error) {
-          console.error('Erreur lors du chargement du modèle GLTF:', error);
-          isLoading = false;
+          handleLoadError('GLTF', error);
         }
       },
       undefined,
-      (error) => {
-        console.error('Erreur lors du chargement du fichier GLTF:', error);
-        isLoading = false;
-      }
+      (error) => handleLoadError('GLTF', error)
     );
   }
+
+  // Nettoyer les ressources d'un objet 3D
+  const disposeObject = (object: THREE.Object3D) => {
+    object.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        if (mesh.geometry) {
+          mesh.geometry.dispose();
+        }
+        const mat = mesh.material;
+        if (Array.isArray(mat)) {
+          mat.forEach((m) => m?.dispose());
+        } else if (mat) {
+          mat.dispose();
+        }
+      }
+    });
+  };
+
+  // Nettoyer les axes helpers
+  const disposeAxesGroup = () => {
+    if (!axesGroup) return;
+    
+    scene.remove(axesGroup);
+    axesGroup.traverse((child) => {
+      if (child instanceof THREE.ArrowHelper) {
+        if (child.line) {
+          child.line.geometry.dispose();
+          if (child.line.material instanceof THREE.Material) {
+            child.line.material.dispose();
+          }
+        }
+        if (child.cone) {
+          child.cone.geometry.dispose();
+          if (child.cone.material instanceof THREE.Material) {
+            child.cone.material.dispose();
+          }
+        }
+      } else if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        if (child.material instanceof THREE.Material) {
+          child.material.dispose();
+        }
+      }
+    });
+    axesGroup = null;
+  };
+
+  // Configuration des formats supportés et non supportés
+  const MODEL_LOADERS: Record<string, () => void> = {
+    '.ply': loadPLYModel,
+    '.glb': loadGLBModel,
+    '.gltf': loadGLTFModel,
+    '.obj': loadOBJModel,
+    '.stl': loadSTLModel,
+    '.fbx': loadFBXModel,
+    '.dae': loadDAEModel
+  };
+
+  const UNSUPPORTED_FORMATS = ['.x3d', '.blend', '.blend1', '.usdc', '.abc', '.svg', '.mtl'];
 
   function loadCurrentModel() {
     if (model) {
       scene.remove(model);
-      model.traverse((child) => {
-        const potentialMesh = child as THREE.Mesh;
-        if ((potentialMesh as any).isMesh) {
-          if (potentialMesh.geometry) {
-            potentialMesh.geometry.dispose();
-          }
-          const mat = potentialMesh.material as unknown;
-          if (Array.isArray(mat)) {
-            (mat as THREE.Material[]).forEach((m) => m && m.dispose && m.dispose());
-          } else if (mat && (mat as THREE.Material).dispose) {
-            (mat as THREE.Material).dispose();
-          }
-        }
-      });
+      disposeObject(model);
     }
 
-    // Supprimer l'ancien axesGroup s'il existe
-    if (axesGroup) {
-      scene.remove(axesGroup);
-      axesGroup.traverse((child) => {
-        if (child instanceof THREE.ArrowHelper) {
-          // ArrowHelper contient une ligne et un cône, nettoyer leurs ressources
-          if (child.line) {
-            child.line.geometry.dispose();
-            if (child.line.material instanceof THREE.Material) {
-              child.line.material.dispose();
-            }
-          }
-          if (child.cone) {
-            child.cone.geometry.dispose();
-            if (child.cone.material instanceof THREE.Material) {
-              child.cone.material.dispose();
-            }
-          }
-        } else if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
-          if (child.material instanceof THREE.Material) {
-            child.material.dispose();
-          }
-        }
-      });
-      axesGroup = null;
-    }
+    disposeAxesGroup();
 
     isLoading = true;
     loadingMessage = 'Chargement du modèle 3D...';
     
     const lowerPath = modelPath.toLowerCase();
+    const extension = Object.keys(MODEL_LOADERS).find(ext => lowerPath.endsWith(ext));
     
-    if (lowerPath.endsWith('.ply')) {
-      loadPLYModel();
-    } else if (lowerPath.endsWith('.glb')) {
-      loadGLBModel();
-    } else if (lowerPath.endsWith('.gltf')) {
-      loadGLTFModel();
-    } else if (lowerPath.endsWith('.obj')) {
-      loadOBJModel();
-    } else if (lowerPath.endsWith('.stl')) {
-      loadSTLModel();
-    } else if (lowerPath.endsWith('.fbx')) {
-      loadFBXModel();
-    } else if (lowerPath.endsWith('.dae')) {
-      loadDAEModel();
-    } else if (lowerPath.endsWith('.x3d') || lowerPath.endsWith('.blend') || lowerPath.endsWith('.blend1') || 
-               lowerPath.endsWith('.usdc') || lowerPath.endsWith('.abc') || 
-               lowerPath.endsWith('.svg') || lowerPath.endsWith('.mtl')) {
+    if (extension) {
+      MODEL_LOADERS[extension]();
+    } else if (UNSUPPORTED_FORMATS.some(ext => lowerPath.endsWith(ext))) {
       isLoading = false;
       loadingMessage = 'Ce format nécessite une conversion préalable. Formats supportés: GLB, GLTF, PLY, OBJ, STL, FBX, DAE';
     } else {
@@ -567,19 +465,14 @@
 
   // Mettre à jour les couleurs quand le thème change
   $effect(() => {
-    const currentTheme = $theme; // Capture du thème pour la réactivité
+    const currentTheme = $theme;
     
     if (scene && gridHelper && renderer) {
-      console.log('🎨 Mise à jour du thème 3D:', currentTheme);
-      
-      // Mettre à jour la couleur de fond
       scene.background = new THREE.Color(currentTheme === 'dark' ? 0x1a1a1a : 0xf0f0f0);
       
-      // Mettre à jour les couleurs de la grille
       const gridColor1 = currentTheme === 'dark' ? 0x555555 : 0x888888;
       const gridColor2 = currentTheme === 'dark' ? 0x333333 : 0x444444;
       
-      // Retirer l'ancienne grille
       scene.remove(gridHelper);
       if (gridHelper.geometry) gridHelper.geometry.dispose();
       if (gridHelper.material) {
@@ -590,11 +483,9 @@
         }
       }
       
-      // Créer une nouvelle grille avec les nouvelles couleurs
       gridHelper = new THREE.GridHelper(20, 20, gridColor1, gridColor2);
       scene.add(gridHelper);
       
-      // Forcer le rendu pour afficher les changements immédiatement
       if (renderer && scene && camera) {
         renderer.render(scene, camera);
       }

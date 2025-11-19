@@ -32,7 +32,6 @@
     let currentTheme = $state($theme);
     $effect(() => {
         currentTheme = $theme;
-        console.log('🎨 PROFILE - Thème changé:', currentTheme);
     });
     let showPwdModal = $state(false);
     let currentPassword = $state('');
@@ -169,8 +168,6 @@
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
-            console.log(`Téléchargement de ${title} réussi`);
         } catch (error) {
             console.error('Erreur lors du téléchargement:', error);
             alert('Erreur lors du téléchargement du modèle.');
@@ -252,7 +249,6 @@
                 return;
             }
 
-            console.log('Mot de passe changé');
             editingPassword = false;
             resetPasswordForm();
         } catch (err) {
