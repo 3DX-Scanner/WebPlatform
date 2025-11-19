@@ -43,7 +43,6 @@
 
   function initializeScene() {
     scene = new THREE.Scene();
-    // Couleur de fond selon le thème
     scene.background = new THREE.Color($theme === 'dark' ? 0x1a1a1a : 0xf0f0f0);
 
     camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
@@ -60,7 +59,6 @@
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
     
-    // Style le canvas pour être responsive
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
     renderer.domElement.style.display = 'block';
@@ -81,7 +79,6 @@
     directionalLight2.position.set(-10, -10, -5);
     scene.add(directionalLight2);
 
-    // Ajouter une grille de référence avec couleurs adaptées au thème
     const gridColor1 = $theme === 'dark' ? 0x555555 : 0x888888;
     const gridColor2 = $theme === 'dark' ? 0x333333 : 0x444444;
     gridHelper = new THREE.GridHelper(20, 20, gridColor1, gridColor2);
@@ -103,13 +100,11 @@
     controls.screenSpacePanning = false;
   }
 
-  // Fonction générique pour setup du modèle (scaling, positionnement, axes, caméra)
   function setupModel(loadedModel: THREE.Group | THREE.Object3D, zoomFactor: number = 1.0) {
     model = loadedModel as THREE.Group;
     scene.add(model);
     model.updateMatrixWorld(true);
 
-    // Ajuster la position et la taille
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -119,15 +114,12 @@
     const scale = 4.5 / safeMax;
     model.scale.setScalar(scale);
     
-    // Recalculer la bounding box après le scale pour positionner correctement
     const scaledBox = new THREE.Box3().setFromObject(model);
     const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
     const scaledMin = scaledBox.min;
     
-    // Repositionner le modèle pour qu'il soit posé sur la grille (Y=0)
     model.position.set(-scaledCenter.x, -scaledMin.y, -scaledCenter.z);
 
-    // Créer des axes X, Y, Z
     const scaledSize = scaledBox.getSize(new THREE.Vector3());
     const axesSize = Math.max(scaledSize.x, scaledSize.y, scaledSize.z) * 0.5;
     
@@ -138,7 +130,6 @@
     const arrowHeadLength = axisLength * 0.15;
     const arrowHeadWidth = axisLength * 0.08;
     
-    // Axe X (Rouge)
     const xArrow = new THREE.ArrowHelper(
       new THREE.Vector3(1, 0, 0),
       new THREE.Vector3(0, 0, 0),
@@ -149,7 +140,6 @@
     );
     axesGroup.add(xArrow);
     
-    // Axe Y (Vert)
     const yArrow = new THREE.ArrowHelper(
       new THREE.Vector3(0, 1, 0),
       new THREE.Vector3(0, 0, 0),
@@ -160,7 +150,6 @@
     );
     axesGroup.add(yArrow);
     
-    // Axe Z (Bleu)
     const zArrow = new THREE.ArrowHelper(
       new THREE.Vector3(0, 0, 1),
       new THREE.Vector3(0, 0, 0),
@@ -174,13 +163,12 @@
     axesGroup.position.copy(model.position);
     scene.add(axesGroup);
 
-    // Positionner la caméra avec un facteur de zoom ajustable
     const fov = camera.fov * (Math.PI / 180);
     const distance = (safeMax / 2) / Math.tan(fov / 2);
     
     const azimuth = Math.PI / 4;
     const polar = Math.PI / 3;
-    const cameraDistance = distance * zoomFactor; // Utiliser le facteur de zoom
+    const cameraDistance = distance * zoomFactor;
     camera.position.set(
       cameraDistance * Math.sin(polar) * Math.cos(azimuth),
       cameraDistance * Math.cos(polar),
@@ -196,7 +184,6 @@
     animate();
   }
 
-  // Matériau par défaut pour les modèles
   const createDefaultMaterial = () => new THREE.MeshPhongMaterial({
     color: 0x888888,
     side: THREE.DoubleSide,
@@ -205,7 +192,6 @@
     specular: 0x222222
   });
 
-  // Fonction générique pour gérer les erreurs de chargement
   const handleLoadError = (format: string, error?: any) => {
     if (error) {
       console.error(`Erreur lors du chargement du fichier ${format}:`, error);
@@ -372,7 +358,6 @@
     );
   }
 
-  // Nettoyer les ressources d'un objet 3D
   const disposeObject = (object: THREE.Object3D) => {
     object.traverse((child) => {
       const mesh = child as THREE.Mesh;
@@ -390,7 +375,6 @@
     });
   };
 
-  // Nettoyer les axes helpers
   const disposeAxesGroup = () => {
     if (!axesGroup) return;
     
@@ -419,7 +403,6 @@
     axesGroup = null;
   };
 
-  // Configuration des formats supportés et non supportés
   const MODEL_LOADERS: Record<string, () => void> = {
     '.ply': loadPLYModel,
     '.glb': loadGLBModel,
@@ -463,7 +446,6 @@
     }
   });
 
-  // Mettre à jour les couleurs quand le thème change
   $effect(() => {
     const currentTheme = $theme;
     
@@ -517,7 +499,6 @@
     initializeScene();
     loadCurrentModel();
 
-    // Utiliser ResizeObserver pour surveiller le conteneur directement
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         handleResize();
@@ -528,7 +509,6 @@
       resizeObserver.observe(container);
     }
 
-    // Garder window resize comme fallback
     window.addEventListener('resize', handleResize);
     
     return () => {
@@ -550,13 +530,11 @@
     if (!document.fullscreenElement) {
       container.requestFullscreen().then(() => {
         isFullscreen = true;
-        // Le ResizeObserver va gérer le redimensionnement automatiquement
         setTimeout(handleResize, 100);
       });
     } else {
       document.exitFullscreen().then(() => {
         isFullscreen = false;
-        // Le ResizeObserver va gérer le redimensionnement automatiquement
         setTimeout(handleResize, 100);
       });
     }
@@ -576,16 +554,13 @@
 >
   {#if isLoading}
     <div class="absolute inset-0 flex flex-col items-center justify-center z-10" style="background-color: {$theme === 'dark' ? 'rgba(0, 0, 0, 0.95)' : 'rgba(255, 255, 255, 0.95)'}">
-      <!-- Spinner avec animation bien visible -->
       <div class="relative mb-6">
         <div class="w-16 h-16 rounded-full border-4 border-transparent" style="border-top-color: {$theme === 'dark' ? '#60a5fa' : '#2563eb'}; border-right-color: {$theme === 'dark' ? '#60a5fa' : '#2563eb'}; animation: spin 0.8s linear infinite;"></div>
         <div class="absolute inset-0 w-16 h-16 rounded-full" style="border: 4px solid {$theme === 'dark' ? 'rgba(55, 65, 81, 0.3)' : 'rgba(229, 231, 235, 0.5)'}"></div>
       </div>
       
-      <!-- Message de chargement -->
       <div class="text-lg font-semibold mb-4" style="color: {$theme === 'dark' ? '#e5e7eb' : '#1f2937'}">{loadingMessage}</div>
       
-      <!-- Barre de progression -->
       <div class="w-64 h-2 rounded-full overflow-hidden" style="background-color: {$theme === 'dark' ? '#374151' : '#e5e7eb'}">
         <div 
           class="h-full transition-all duration-300 ease-out rounded-full" 

@@ -40,7 +40,7 @@
         
         try {
             const response = await fetch('/api/models', {
-                credentials: 'include' // Inclure les cookies pour l'authentification
+                credentials: 'include'
             });
             const data = await response.json();
             
@@ -171,7 +171,6 @@
     }
 
     function handleModelUploaded() {
-        // Recharger les modèles après l'upload
         loadModels();
     }
 
@@ -190,7 +189,6 @@
     }
 
     function handleModelUpdated() {
-        // Recharger les modèles après la modification
         loadModels();
     }
 
@@ -205,10 +203,8 @@
         const model = selectedModelForDelete;
         const folderName = model.id.split('/').slice(1).join('/');
         
-        // Fermer la popup
         deleteConfirmOpen = false;
         
-        // Effectuer la suppression
         performDelete(model, folderName);
         
         selectedModelForDelete = null;
@@ -239,7 +235,6 @@
                 throw new Error(data.error || 'Erreur lors de la suppression');
             }
 
-            // Recharger les modèles après la suppression
             loadModels();
         } catch (error: any) {
             console.error('Erreur lors de la suppression:', error);
@@ -252,24 +247,18 @@
 
     <section class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {#if isLoading}
-            <!-- Skeleton Loader -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {#each Array(10) as _}
                     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden animate-pulse">
-                        <!-- Image skeleton -->
                         <div class="w-full h-48 bg-gray-200 dark:bg-gray-700"></div>
                         
-                        <!-- Content skeleton -->
                         <div class="p-4 space-y-3">
-                            <!-- Badge skeleton -->
                             <div class="flex items-center gap-2">
                                 <div class="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                             </div>
                             
-                            <!-- Title skeleton -->
                             <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                             
-                            <!-- Subtitle skeleton -->
                             <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
                         </div>
                     </div>
@@ -277,7 +266,7 @@
             </div>
         {:else if loadError}
             <EmptyStateComponent 
-                icon="❌"
+                icon=""
                 title="Erreur de chargement"
                 description={loadError}
             />
@@ -308,7 +297,7 @@
             
             {#if filteredModels.length === 0}
                 <EmptyStateComponent 
-                    icon="🔍"
+                    icon=""
                     title="Aucun modèle trouvé"
                     description="Essayez de modifier vos critères de recherche"
                 />

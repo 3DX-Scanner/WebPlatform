@@ -6,16 +6,12 @@
     
     let { children, data } = $props();
 
-    // Initialiser immédiatement
     theme.initialize();
     
     onMount(() => {
         theme.initialize();
-        console.log('🎨 Thème actuel:', $theme);
-        console.log('📋 Classe dark sur HTML?', document.documentElement.classList.contains('dark'));
     });
 
-    // Réagir aux changements de thème
     $effect(() => {
         const currentTheme = $theme;
         if (typeof document !== 'undefined') {
@@ -24,7 +20,6 @@
             } else {
                 document.documentElement.classList.remove('dark');
             }
-            console.log('✅ Thème appliqué:', currentTheme);
         }
     });
 </script>

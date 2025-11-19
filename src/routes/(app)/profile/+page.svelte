@@ -28,7 +28,6 @@
     let language = $state<'fr' | 'en'>('fr');
     let editingPassword = $state(false);
     
-    // Variable réactive pour le thème
     let currentTheme = $state($theme);
     $effect(() => {
         currentTheme = $theme;
@@ -38,21 +37,18 @@
     let newPassword = $state('');
     let confirmPassword = $state('');
     let passwordError = $state('');
-    // Changement de username
     let editingUsername = $state(false);
     let newUsername = $state('');
     let usernameError = $state('');
     let leftCardEl: HTMLDivElement;
     let rightCardEl: HTMLDivElement;
 
-    // Modèles 3D
     let userModels = $state<any[]>([]);
     let searchQuery = $state('');
     let selectedCategory = $state('');
     let isLoadingModels = $state(false);
     let loadModelsError = $state('');
     
-    // Derived values
     let filteredUserModels = $derived(filterAndSortUserModels(userModels, searchQuery, selectedCategory));
     let userModelCategories = $derived(Array.from(new Set(userModels.map((m) => m.category))).sort());
     let userStats = $state<{
@@ -176,7 +172,6 @@
 
     async function generateQRCode() {
         try {
-            // Générer un token de synchronisation basé sur l'ID utilisateur
             const syncToken = `scanner-sync-${data.user.id}-${Date.now()}`;
             const syncUrl = `${window.location.origin}/api/scanner-sync?token=${syncToken}`;
             
@@ -201,7 +196,6 @@
         const onResize = () => syncHeights();
         window.addEventListener('resize', onResize);
         
-        // Générer le QR code après le rendu si la section est sélectionnée
         tick().then(() => {
             if (selectedSection === 'securite' && qrCodeCanvas) {
                 generateQRCode();
@@ -273,7 +267,6 @@
 
     function handleSectionChange(section: 'securite' | 'preferences' | 'modeles' | 'abonnement') {
         selectedSection = section;
-        // Générer le QR code si on passe à la section synchronisation
         if (section === 'securite') {
             tick().then(() => {
                 if (qrCodeCanvas) {
@@ -310,7 +303,6 @@
     }
 
     function validateUsername() {
-        // Ne valide pas si c'est vide ou identique à l'actuel (pour désactiver le bouton)
         if (!newUsername || newUsername === data.user.username) {
             return false;
         }
@@ -327,10 +319,8 @@
         return true;
     }
 
-    // Réinitialiser l'erreur quand l'utilisateur modifie le champ
     $effect(() => {
         if (newUsername && editingUsername) {
-            // Efface l'erreur serveur uniquement, pas les erreurs de validation
             if (usernameError === 'Ce nom d\'utilisateur est déjà utilisé' || usernameError === 'Erreur réseau') {
                 usernameError = '';
             }
@@ -338,7 +328,6 @@
     });
 
     async function saveUsername() {
-        // Validation côté client avant envoi
         usernameError = '';
         
         if (!newUsername) {
@@ -377,7 +366,6 @@
                 return;
             }
 
-            // Mettre à jour les données locales
             data.user.username = newUsername;
             editingUsername = false;
             usernameError = '';
@@ -554,9 +542,7 @@
                                     </div>
                                 {/if}
                             {:else}
-                                <!-- Utilisateur connecté via Google OAuth -->
                                 <div class="flex gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 rounded-xl p-5 text-white items-start shadow-md">
-                                    <div class="text-2xl">🔒</div>
                                     <div class="flex flex-col gap-2">
                                         <h4 class="m-0 text-white text-lg font-bold">Authentification Google</h4>
                                         <p class="m-0 leading-relaxed text-white/95">Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
@@ -582,7 +568,7 @@
                                     onclick={() => handleThemeChange('light')} 
                                     aria-selected={$theme === 'light'}
                                 >
-                                    <span class="mr-1">☀️</span> Clair
+                                    Clair
                                 </button>
                                 <button 
                                     type="button" 
@@ -591,7 +577,7 @@
                                     onclick={() => handleThemeChange('dark')} 
                                     aria-selected={$theme === 'dark'}
                                 >
-                                    <span class="mr-1">🌙</span> Sombre
+                                    Sombre
                                 </button>
                             </div>
                         </div>
@@ -713,13 +699,12 @@
                         </div>
                     {:else if loadModelsError}
                         <EmptyStateComponent 
-                            icon="❌"
+                            icon=""
                             title="Erreur de chargement"
                             description={loadModelsError}
                         />
                     {:else if userModels.length === 0}
                         <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px] py-12">
-                            <div class="text-6xl mb-2">📦</div>
                             <p class="text-gray-600 dark:text-gray-400 text-lg font-medium">Aucun modèle pour le moment</p>
                             <p class="text-gray-500 dark:text-gray-500 text-sm">Ouvrez la galerie des modèles 3D pour commencer.</p>
                             <a 
@@ -749,7 +734,7 @@
                         
                         {#if filteredUserModels.length === 0}
                             <EmptyStateComponent 
-                                icon="🔍"
+                                icon=""
                                 title="Aucun modèle trouvé"
                                 description="Essayez de modifier vos critères de recherche"
                             />
@@ -773,7 +758,7 @@
                                     class="bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 backdrop-blur-sm border border-white/20" 
                                     disabled={plan.current}
                                 >
-                                    {plan.current ? '✓ Plan Actuel' : `Passer en ${plan.name}`}
+                                    {plan.current ? 'Plan Actuel' : `Passer en ${plan.name}`}
                                 </button>
                             </div>
                         {/each}

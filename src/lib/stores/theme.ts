@@ -10,15 +10,12 @@ interface ThemeStore extends Writable<Theme> {
 }
 
 function createThemeStore(): ThemeStore {
-    // Initialisation du thème
     const getInitialTheme = (): Theme => {
         if (browser) {
-            // 1. Vérifier localStorage
             const saved = localStorage.getItem('theme');
             if (saved && (saved === 'light' || saved === 'dark')) {
                 return saved;
             }
-            // 2. Vérifier les préférences système
             if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 return 'dark';
             }
@@ -28,7 +25,6 @@ function createThemeStore(): ThemeStore {
 
     const { subscribe, set, update } = writable<Theme>(getInitialTheme());
 
-    // Fonction pour appliquer le thème au DOM
     const applyThemeToDOM = (theme: Theme) => {
         if (browser) {
             const root = document.documentElement;
@@ -40,7 +36,6 @@ function createThemeStore(): ThemeStore {
         }
     };
 
-    // Fonction pour sauvegarder dans localStorage
     const saveToStorage = (theme: Theme) => {
         if (browser) {
             localStorage.setItem('theme', theme);
@@ -50,14 +45,12 @@ function createThemeStore(): ThemeStore {
     return {
         subscribe,
         
-        // Définir le thème
         setTheme: (theme: Theme) => {
             set(theme);
             applyThemeToDOM(theme);
             saveToStorage(theme);
         },
         
-        // Basculer entre light et dark
         toggle: () => {
             update(current => {
                 const newTheme: Theme = current === 'light' ? 'dark' : 'light';
@@ -67,14 +60,12 @@ function createThemeStore(): ThemeStore {
             });
         },
         
-        // Initialiser le thème (à appeler au démarrage de l'app)
         initialize: () => {
             const initialTheme = getInitialTheme();
             set(initialTheme);
             applyThemeToDOM(initialTheme);
         },
 
-        // Conserver les méthodes du store de base
         set: (theme: Theme) => {
             set(theme);
             applyThemeToDOM(theme);
@@ -92,10 +83,8 @@ function createThemeStore(): ThemeStore {
     };
 }
 
-// Export du store singleton
 export const theme = createThemeStore();
 
-// Fonctions helper pour compatibilité avec l'ancien code
 export const toggleTheme = () => theme.toggle();
 export const setTheme = (value: Theme) => theme.setTheme(value);
 export const initializeTheme = () => theme.initialize();
