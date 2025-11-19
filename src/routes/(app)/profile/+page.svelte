@@ -45,6 +45,16 @@
     let selectedCategory = '';
     let isLoadingModels = false;
     let loadModelsError = '';
+    let userStats: {
+        bucketName?: string;
+        totalModels?: number;
+        likedModelsCount?: number;
+        storageUsed?: number;
+        storageLimit?: number;
+        storageUsedMB?: string;
+        storageLimitMB?: number;
+        storagePercentage?: string;
+    } = {};
 
     let currentPopup = {
         isOpen: false,
@@ -80,6 +90,7 @@
             }
             
             userModels = data.models || [];
+            userStats = data.stats || {};
             filteredUserModels = [...userModels];
             isLoadingModels = false;
         } catch (error) {
@@ -584,6 +595,92 @@
                 <section class="mb-4">
                     <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Mes modèles</h3>
                     
+                    <!-- Statistiques -->
+                    {#if userStats.bucketName}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <!-- Nom du bucket -->
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-blue-500 dark:bg-blue-600 flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Bucket</p>
+                                        <p class="text-lg font-bold text-gray-900 dark:text-white">{userStats.bucketName}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Modèles likés -->
+                            <div class="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-red-500 dark:bg-red-600 flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Modèles likés</p>
+                                        <p class="text-lg font-bold text-gray-900 dark:text-white">{userStats.likedModelsCount || 0}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total modèles -->
+                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-green-500 dark:bg-green-600 flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">Mes modèles</p>
+                                        <p class="text-lg font-bold text-gray-900 dark:text-white">{userStats.totalModels || 0}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stockage utilisé -->
+                        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 mb-6 border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Stockage utilisé</p>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {userStats.storageUsedMB || '0'} MB
+                                        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                                            / {userStats.storageLimitMB || 1024} MB
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-bold text-gray-900 dark:text-white">{userStats.storagePercentage || '0'}%</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">utilisé</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Barre de progression -->
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                                <div 
+                                    class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out rounded-full"
+                                    style="width: {Math.min(100, parseFloat(userStats.storagePercentage || '0'))}%"
+                                ></div>
+                            </div>
+                            
+                            {#if parseFloat(userStats.storagePercentage || '0') > 80}
+                                <p class="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    Attention : Vous approchez de la limite de stockage
+                                </p>
+                            {/if}
+                        </div>
+                    {/if}
+                    
                     {#if isLoadingModels}
                         <div class="flex items-center justify-center min-h-[300px]">
                             <div class="text-center">
@@ -599,7 +696,6 @@
                         />
                     {:else if userModels.length === 0}
                         <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
-                            <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
                             <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
                             <a 
                                 class="border rounded-md px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-50 transition-colors duration-200" 

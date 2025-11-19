@@ -102,8 +102,36 @@ export const GET: RequestHandler = async ({ locals }) => {
 				return model;
 			});
 
+		// Calculer le stockage utilisé
+		let totalStorageUsed = 0;
+		for (const file of files) {
+			totalStorageUsed += file.size || 0;
+		}
+
+		// Récupérer le nombre de modèles likés par l'utilisateur
+		let likedModelsCount = 0;
+		try {
+			// @ts-ignore - Le modèle ModelLike sera disponible après la génération du client Prisma
+			likedModelsCount = await prisma.modelLike.count({
+				where: { userId: userId }
+			});
+		} catch (error) {
+			console.warn('⚠️  Impossible de compter les likes (table peut-être non créée):', error);
+		}
+
+		const stats = {
+			bucketName: userBucket,
+			totalModels: userModels.length,
+			likedModelsCount: likedModelsCount,
+			storageUsed: totalStorageUsed,
+			storageLimit: 1024 * 1024 * 1024, // 1 Go en bytes
+			storageUsedMB: (totalStorageUsed / (1024 * 1024)).toFixed(2),
+			storageLimitMB: 1024,
+			storagePercentage: ((totalStorageUsed / (1024 * 1024 * 1024)) * 100).toFixed(1)
+		};
+
 		console.log(`✅ ${userModels.length} modèles trouvés pour l'utilisateur ${userId}`);
-		return json({ success: true, models: userModels });
+		return json({ success: true, models: userModels, stats });
 	} catch (error) {
 		console.error('❌ Erreur lors de la récupération des modèles utilisateur:', error);
 		return json({ error: 'Erreur lors de la récupération des modèles' }, { status: 500 });

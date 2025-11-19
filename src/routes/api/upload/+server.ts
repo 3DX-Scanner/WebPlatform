@@ -4,7 +4,6 @@ import { uploadFile, getUserBucket, ensureUserBucket } from '$lib/server/minio';
 import { prisma } from '$lib/server/prisma';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	// Vérifier l'authentification
 	if (!locals.user) {
 		return json({ error: 'Non authentifié' }, { status: 401 });
 	}

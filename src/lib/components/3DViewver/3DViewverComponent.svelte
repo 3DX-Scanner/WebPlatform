@@ -3,7 +3,12 @@
   import * as THREE from 'three';
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
   import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js';
+  import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+  import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+  import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+  import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+  import { Maximize2, X } from 'lucide-svelte';
 
   let { 
     modelPath, 
@@ -89,6 +94,124 @@
     controls.screenSpacePanning = false;
   }
 
+  // Fonction générique pour setup du modèle (scaling, positionnement, axes, caméra)
+  function setupModel(loadedModel: THREE.Group | THREE.Object3D, zoomFactor: number = 1.0) {
+    model = loadedModel as THREE.Group;
+    scene.add(model);
+    model.updateMatrixWorld(true);
+
+    // Ajuster la position et la taille
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const safeMax = (!isFinite(maxDim) || maxDim <= 0) ? 1 : maxDim;
+
+    const scale = 4.5 / safeMax;
+    model.scale.setScalar(scale);
+    
+    // Recalculer la bounding box après le scale pour positionner correctement
+    const scaledBox = new THREE.Box3().setFromObject(model);
+    const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+    const scaledMin = scaledBox.min;
+    
+    // Repositionner le modèle pour qu'il soit posé sur la grille (Y=0)
+    model.position.set(-scaledCenter.x, -scaledMin.y, -scaledCenter.z);
+
+    // Créer des axes X, Y, Z
+    const scaledSize = scaledBox.getSize(new THREE.Vector3());
+    const axesSize = Math.max(scaledSize.x, scaledSize.y, scaledSize.z) * 0.5;
+    
+    // Nettoyer l'ancien axesGroup s'il existe
+    if (axesGroup) {
+      scene.remove(axesGroup);
+      axesGroup.traverse((child) => {
+        if (child instanceof THREE.ArrowHelper) {
+          if (child.line) {
+            child.line.geometry.dispose();
+            if (child.line.material instanceof THREE.Material) {
+              child.line.material.dispose();
+            }
+          }
+          if (child.cone) {
+            child.cone.geometry.dispose();
+            if (child.cone.material instanceof THREE.Material) {
+              child.cone.material.dispose();
+            }
+          }
+        } else if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (child.material instanceof THREE.Material) {
+            child.material.dispose();
+          }
+        }
+      });
+    }
+    
+    axesGroup = new THREE.Group();
+    
+    const axisLength = axesSize;
+    const arrowHeadLength = axisLength * 0.15;
+    const arrowHeadWidth = axisLength * 0.08;
+    
+    // Axe X (Rouge)
+    const xArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      axisLength,
+      0xff0000,
+      arrowHeadLength,
+      arrowHeadWidth
+    );
+    axesGroup.add(xArrow);
+    
+    // Axe Y (Vert)
+    const yArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 0),
+      axisLength,
+      0x00ff00,
+      arrowHeadLength,
+      arrowHeadWidth
+    );
+    axesGroup.add(yArrow);
+    
+    // Axe Z (Bleu)
+    const zArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, 0),
+      axisLength,
+      0x0000ff,
+      arrowHeadLength,
+      arrowHeadWidth
+    );
+    axesGroup.add(zArrow);
+    
+    axesGroup.position.copy(model.position);
+    scene.add(axesGroup);
+
+    // Positionner la caméra avec un facteur de zoom ajustable
+    const fov = camera.fov * (Math.PI / 180);
+    const distance = (safeMax / 2) / Math.tan(fov / 2);
+    
+    const azimuth = Math.PI / 4;
+    const polar = Math.PI / 3;
+    const cameraDistance = distance * zoomFactor; // Utiliser le facteur de zoom
+    camera.position.set(
+      cameraDistance * Math.sin(polar) * Math.cos(azimuth),
+      cameraDistance * Math.cos(polar),
+      cameraDistance * Math.sin(polar) * Math.sin(azimuth)
+    );
+    
+    controls.target.set(0, 0, 0);
+    controls.minDistance = 0.1;
+    controls.maxDistance = distance * 3;
+    controls.update();
+
+    isLoading = false;
+    animate();
+  }
+
   function loadPLYModel() {
     const loader = new PLYLoader();
 
@@ -102,7 +225,7 @@
       (geometry) => {
         try {
           // Créer un groupe pour contenir le modèle
-          model = new THREE.Group();
+          const modelGroup = new THREE.Group();
           
           // Calculer les normales si elles n'existent pas
           if (!geometry.attributes.normal) {
@@ -120,7 +243,7 @@
 
           // Créer la mesh principale
           const mesh = new THREE.Mesh(geometry, meshMaterial);
-          model.add(mesh);
+          modelGroup.add(mesh);
 
           // Si le modèle n'a pas de faces (seulement des points), créer aussi des points
           if (!geometry.attributes.normal && geometry.attributes.position) {
@@ -130,125 +253,10 @@
               sizeAttenuation: true
             });
             const points = new THREE.Points(geometry, pointsMaterial);
-            model.add(points);
+            modelGroup.add(points);
           }
 
-          scene.add(model);
-          model.updateMatrixWorld(true);
-
-          // Ajuster la position et la taille
-          const box = new THREE.Box3().setFromObject(model);
-          const center = box.getCenter(new THREE.Vector3());
-          const size = box.getSize(new THREE.Vector3());
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const safeMax = (!isFinite(maxDim) || maxDim <= 0) ? 1 : maxDim;
-
-          const scale = 4.5 / safeMax;
-          model.scale.setScalar(scale);
-          
-          // Recalculer la bounding box après le scale pour positionner correctement
-          const scaledBox = new THREE.Box3().setFromObject(model);
-          const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
-          const scaledMin = scaledBox.min;
-          
-          // Repositionner le modèle pour qu'il soit posé sur la grille (Y=0)
-          // Centrer en X et Z, mais placer le bas du modèle sur Y=0
-          model.position.set(-scaledCenter.x, -scaledMin.y, -scaledCenter.z);
-
-          // Créer des axes X, Y, Z personnalisés avec des couleurs et épaisseurs spécifiques
-          const scaledSize = scaledBox.getSize(new THREE.Vector3());
-          const axesSize = Math.max(scaledSize.x, scaledSize.y, scaledSize.z) * 0.5;
-          
-          if (axesGroup) {
-            scene.remove(axesGroup);
-            axesGroup.traverse((child) => {
-              if (child instanceof THREE.ArrowHelper) {
-                // ArrowHelper contient une ligne et un cône, nettoyer leurs ressources
-                if (child.line) {
-                  child.line.geometry.dispose();
-                  if (child.line.material instanceof THREE.Material) {
-                    child.line.material.dispose();
-                  }
-                }
-                if (child.cone) {
-                  child.cone.geometry.dispose();
-                  if (child.cone.material instanceof THREE.Material) {
-                    child.cone.material.dispose();
-                  }
-                }
-              } else if (child instanceof THREE.Mesh) {
-                child.geometry.dispose();
-                if (child.material instanceof THREE.Material) {
-                  child.material.dispose();
-                }
-              }
-            });
-          }
-          
-          axesGroup = new THREE.Group();
-          
-          // Créer les 3 axes avec des flèches (ArrowHelper) partant du centre
-          const axisLength = axesSize;
-          const arrowHeadLength = axisLength * 0.15; // 15% de la longueur pour la pointe
-          const arrowHeadWidth = axisLength * 0.08; // 8% de la longueur pour la largeur de la pointe
-          const arrowShaftRadius = axisLength * 0.02; // 2% pour le rayon du cylindre
-          
-          // Axe X (Rouge) - flèche pointant vers +X
-          const xArrow = new THREE.ArrowHelper(
-            new THREE.Vector3(1, 0, 0), // Direction X
-            new THREE.Vector3(0, 0, 0), // Origine au centre
-            axisLength, // Longueur
-            0xff0000, // Couleur rouge
-            arrowHeadLength,
-            arrowHeadWidth
-          );
-          axesGroup.add(xArrow);
-          
-          // Axe Y (Vert) - flèche pointant vers +Y
-          const yArrow = new THREE.ArrowHelper(
-            new THREE.Vector3(0, 1, 0), // Direction Y
-            new THREE.Vector3(0, 0, 0), // Origine au centre
-            axisLength, // Longueur
-            0x00ff00, // Couleur verte
-            arrowHeadLength,
-            arrowHeadWidth
-          );
-          axesGroup.add(yArrow);
-          
-          // Axe Z (Bleu) - flèche pointant vers +Z
-          const zArrow = new THREE.ArrowHelper(
-            new THREE.Vector3(0, 0, 1), // Direction Z
-            new THREE.Vector3(0, 0, 0), // Origine au centre
-            axisLength, // Longueur
-            0x0000ff, // Couleur bleue
-            arrowHeadLength,
-            arrowHeadWidth
-          );
-          axesGroup.add(zArrow);
-          
-          axesGroup.position.copy(model.position);
-          scene.add(axesGroup);
-
-          const fov = camera.fov * (Math.PI / 180);
-          const distance = (safeMax / 2) / Math.tan(fov / 2);
-          
-          // Rotation initiale pour mieux centrer la vue (azimuth et polar)
-          const azimuth = Math.PI / 4; // 45 degrés en rotation horizontale
-          const polar = Math.PI / 3; // 60 degrés en rotation verticale
-          const cameraDistance = distance * 1.0; // Dézoomé un peu plus
-          camera.position.set(
-            cameraDistance * Math.sin(polar) * Math.cos(azimuth),
-            cameraDistance * Math.cos(polar),
-            cameraDistance * Math.sin(polar) * Math.sin(azimuth)
-          );
-          
-          controls.target.set(0, 0, 0);
-          controls.minDistance = 0.1;
-          controls.maxDistance = distance * 3;
-          controls.update();
-
-          isLoading = false;
-          animate();
+          setupModel(modelGroup);
         } catch (error) {
           console.error('Erreur lors du chargement du modèle PLY:', error);
           isLoading = false;
@@ -287,112 +295,7 @@
             data as ArrayBuffer,
             '',
             (gltf) => {
-              model = gltf.scene;
-              scene.add(model);
-              model.updateMatrixWorld(true);
-
-              const box = new THREE.Box3().setFromObject(model);
-              const center = box.getCenter(new THREE.Vector3());
-              const size = box.getSize(new THREE.Vector3());
-              const maxDim = Math.max(size.x, size.y, size.z);
-              const safeMax = (!isFinite(maxDim) || maxDim <= 0) ? 1 : maxDim;
-
-              const scale = 4.5 / safeMax;
-              model.scale.setScalar(scale);
-              
-              // Recalculer la bounding box après le scale pour positionner correctement
-              const scaledBox = new THREE.Box3().setFromObject(model);
-              const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
-              const scaledMin = scaledBox.min;
-              
-              // Repositionner le modèle pour qu'il soit posé sur la grille (Y=0)
-              // Centrer en X et Z, mais placer le bas du modèle sur Y=0
-              model.position.set(-scaledCenter.x, -scaledMin.y, -scaledCenter.z);
-
-              // Créer des axes X, Y, Z personnalisés avec des couleurs et épaisseurs spécifiques
-              const scaledSize = scaledBox.getSize(new THREE.Vector3());
-              const axesSize = Math.max(scaledSize.x, scaledSize.y, scaledSize.z) * 0.5;
-              
-              if (axesGroup) {
-                scene.remove(axesGroup);
-                axesGroup.traverse((child) => {
-                  if (child instanceof THREE.ArrowHelper) {
-                    // ArrowHelper contient une ligne et un cône, nettoyer leurs ressources
-                    if (child.line) {
-                      child.line.geometry.dispose();
-                      if (child.line.material instanceof THREE.Material) {
-                        child.line.material.dispose();
-                      }
-                    }
-                    if (child.cone) {
-                      child.cone.geometry.dispose();
-                      if (child.cone.material instanceof THREE.Material) {
-                        child.cone.material.dispose();
-                      }
-                    }
-                  } else if (child instanceof THREE.Mesh) {
-                    child.geometry.dispose();
-                    if (child.material instanceof THREE.Material) {
-                      child.material.dispose();
-                    }
-                  }
-                });
-              }
-              
-              axesGroup = new THREE.Group();
-              
-              // Créer les 3 axes avec des flèches (ArrowHelper) partant du centre
-              const axisLength = axesSize;
-              const arrowHeadLength = axisLength * 0.15; // 15% de la longueur pour la pointe
-              const arrowHeadWidth = axisLength * 0.08; // 8% de la longueur pour la largeur de la pointe
-              const arrowShaftRadius = axisLength * 0.02; // 2% pour le rayon du cylindre
-              
-              // Axe X (Rouge) - flèche pointant vers +X
-              const xArrow = new THREE.ArrowHelper(
-                new THREE.Vector3(1, 0, 0), // Direction X
-                new THREE.Vector3(0, 0, 0), // Origine au centre
-                axisLength, // Longueur
-                0xff0000, // Couleur rouge
-                arrowHeadLength,
-                arrowHeadWidth
-              );
-              axesGroup.add(xArrow);
-              
-              // Axe Y (Vert) - flèche pointant vers +Y
-              const yArrow = new THREE.ArrowHelper(
-                new THREE.Vector3(0, 1, 0), // Direction Y
-                new THREE.Vector3(0, 0, 0), // Origine au centre
-                axisLength, // Longueur
-                0x00ff00, // Couleur verte
-                arrowHeadLength,
-                arrowHeadWidth
-              );
-              axesGroup.add(yArrow);
-              
-              // Axe Z (Bleu) - flèche pointant vers +Z
-              const zArrow = new THREE.ArrowHelper(
-                new THREE.Vector3(0, 0, 1), // Direction Z
-                new THREE.Vector3(0, 0, 0), // Origine au centre
-                axisLength, // Longueur
-                0x0000ff, // Couleur bleue
-                arrowHeadLength,
-                arrowHeadWidth
-              );
-              axesGroup.add(zArrow);
-              
-              axesGroup.position.copy(model.position);
-              scene.add(axesGroup);
-
-              const fov = camera.fov * (Math.PI / 180);
-              const distance = (safeMax / 2) / Math.tan(fov / 2);
-              camera.position.set(0, 0, distance * 0.7);
-              controls.target.set(0, 0, 0);
-              controls.minDistance = 0.1;
-              controls.maxDistance = distance * 3;
-              controls.update();
-
-              isLoading = false;
-              animate();
+              setupModel(gltf.scene);
             },
             () => { isLoading = false; }
           );
@@ -402,6 +305,171 @@
       },
       undefined,
       () => { isLoading = false; }
+    );
+  }
+
+  function loadOBJModel() {
+    const loader = new OBJLoader();
+
+    if (!modelPath || !modelPath.toLowerCase().endsWith('.obj')) {
+      isLoading = false;
+      return;
+    }
+
+    loader.load(
+      modelPath,
+      (object) => {
+        try {
+          // Appliquer un matériau par défaut si nécessaire
+          object.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              if (!child.material || (child.material as THREE.Material).type === 'MeshBasicMaterial') {
+                child.material = new THREE.MeshPhongMaterial({
+                  color: 0x888888,
+                  side: THREE.DoubleSide,
+                  flatShading: false,
+                  shininess: 30,
+                  specular: 0x222222
+                });
+              }
+            }
+          });
+
+          setupModel(object, 0.08);
+        } catch (error) {
+          console.error('Erreur lors du chargement du modèle OBJ:', error);
+          isLoading = false;
+        }
+      },
+      undefined,
+      (error) => {
+        console.error('Erreur lors du chargement du fichier OBJ:', error);
+        isLoading = false;
+      }
+    );
+  }
+
+  function loadSTLModel() {
+    const loader = new STLLoader();
+
+    if (!modelPath || !modelPath.toLowerCase().endsWith('.stl')) {
+      isLoading = false;
+      return;
+    }
+
+    loader.load(
+      modelPath,
+      (geometry) => {
+        try {
+          const modelGroup = new THREE.Group();
+          geometry.computeVertexNormals();
+          
+          const material = new THREE.MeshPhongMaterial({
+            color: 0x888888,
+            side: THREE.DoubleSide,
+            flatShading: false,
+            shininess: 30,
+            specular: 0x222222
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          modelGroup.add(mesh);
+
+          setupModel(modelGroup);
+        } catch (error) {
+          console.error('Erreur lors du chargement du modèle STL:', error);
+          isLoading = false;
+        }
+      },
+      undefined,
+      (error) => {
+        console.error('Erreur lors du chargement du fichier STL:', error);
+        isLoading = false;
+      }
+    );
+  }
+
+  function loadFBXModel() {
+    const loader = new FBXLoader();
+
+    if (!modelPath || !modelPath.toLowerCase().endsWith('.fbx')) {
+      isLoading = false;
+      return;
+    }
+
+    loader.load(
+      modelPath,
+      (object) => {
+        try {
+          setupModel(object);
+        } catch (error) {
+          console.error('Erreur lors du chargement du modèle FBX:', error);
+          isLoading = false;
+        }
+      },
+      undefined,
+      (error) => {
+        console.error('Erreur lors du chargement du fichier FBX:', error);
+        isLoading = false;
+      }
+    );
+  }
+
+  function loadDAEModel() {
+    const loader = new ColladaLoader();
+
+    if (!modelPath || !modelPath.toLowerCase().endsWith('.dae')) {
+      isLoading = false;
+      return;
+    }
+
+    loader.load(
+      modelPath,
+      (collada) => {
+        try {
+          setupModel(collada.scene);
+        } catch (error) {
+          console.error('Erreur lors du chargement du modèle DAE:', error);
+          isLoading = false;
+        }
+      },
+      undefined,
+      (error) => {
+        console.error('Erreur lors du chargement du fichier DAE:', error);
+        isLoading = false;
+      }
+    );
+  }
+
+  function loadX3DModel() {
+    // X3DLoader n'est pas disponible dans Three.js, utiliser un message d'erreur
+    isLoading = false;
+    loadingMessage = 'Le format X3D nécessite une conversion préalable vers GLB, GLTF, PLY, OBJ, STL, FBX ou DAE';
+  }
+
+  function loadGLTFModel() {
+    const loader = new GLTFLoader();
+
+    if (!modelPath || !modelPath.toLowerCase().endsWith('.gltf')) {
+      isLoading = false;
+      return;
+    }
+
+    loader.load(
+      modelPath,
+      (gltf) => {
+        try {
+          setupModel(gltf.scene);
+        } catch (error) {
+          console.error('Erreur lors du chargement du modèle GLTF:', error);
+          isLoading = false;
+        }
+      },
+      undefined,
+      (error) => {
+        console.error('Erreur lors du chargement du fichier GLTF:', error);
+        isLoading = false;
+      }
     );
   }
 
@@ -455,13 +523,30 @@
     isLoading = true;
     loadingMessage = 'Chargement du modèle 3D...';
     
-    if (modelPath.toLowerCase().endsWith('.ply')) {
+    const lowerPath = modelPath.toLowerCase();
+    
+    if (lowerPath.endsWith('.ply')) {
       loadPLYModel();
-    } else if (modelPath.toLowerCase().endsWith('.glb')) {
+    } else if (lowerPath.endsWith('.glb')) {
       loadGLBModel();
+    } else if (lowerPath.endsWith('.gltf')) {
+      loadGLTFModel();
+    } else if (lowerPath.endsWith('.obj')) {
+      loadOBJModel();
+    } else if (lowerPath.endsWith('.stl')) {
+      loadSTLModel();
+    } else if (lowerPath.endsWith('.fbx')) {
+      loadFBXModel();
+    } else if (lowerPath.endsWith('.dae')) {
+      loadDAEModel();
+    } else if (lowerPath.endsWith('.x3d') || lowerPath.endsWith('.blend') || lowerPath.endsWith('.blend1') || 
+               lowerPath.endsWith('.usdc') || lowerPath.endsWith('.abc') || 
+               lowerPath.endsWith('.svg') || lowerPath.endsWith('.mtl')) {
+      isLoading = false;
+      loadingMessage = 'Ce format nécessite une conversion préalable. Formats supportés: GLB, GLTF, PLY, OBJ, STL, FBX, DAE';
     } else {
       isLoading = false;
-      loadingMessage = 'Format de fichier non supporté';
+      loadingMessage = 'Format de fichier non supporté pour la visualisation';
     }
   }
 
@@ -556,11 +641,15 @@
   {#if showControls}
     <div class="absolute top-2.5 right-2.5 flex flex-col gap-2 z-[5]">
       <button 
-        class="w-10 h-10 border-none rounded-lg bg-black/70 text-white text-base cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out backdrop-blur-sm hover:bg-black/90 hover:scale-105 active:scale-95" 
+        class="w-10 h-10 border-none rounded-lg bg-black/70 text-white cursor-pointer flex items-center justify-center transition-all duration-200 ease-in-out backdrop-blur-sm hover:bg-black/90 hover:scale-105 active:scale-95" 
         onclick={() => { toggleFullscreen(); }}
         title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
       >
-        {isFullscreen ? '✕' : '⛶'}
+        {#if isFullscreen}
+          <X class="w-5 h-5" />
+        {:else}
+          <Maximize2 class="w-5 h-5" />
+        {/if}
       </button>
     </div>
   {/if}

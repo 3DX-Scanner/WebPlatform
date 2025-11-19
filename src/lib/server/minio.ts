@@ -215,6 +215,40 @@ export async function deleteFile(bucketName: string, objectName: string) {
 }
 
 /**
+ * Copie un fichier dans MinIO (utilisé pour renommer/déplacer)
+ */
+export async function copyFile(
+	sourceBucket: string,
+	sourceObject: string,
+	destBucket: string,
+	destObject: string
+) {
+	try {
+		// Pour MinIO, on utilise getObject puis putObject pour copier
+		// car copyObject peut avoir des limitations selon la version
+		const dataStream = await minioClient.getObject(sourceBucket, sourceObject);
+		
+		// Convertir le stream en buffer
+		const chunks: Buffer[] = [];
+		for await (const chunk of dataStream) {
+			chunks.push(chunk);
+		}
+		const buffer = Buffer.concat(chunks);
+		
+		// Obtenir les métadonnées de l'objet source
+		const stat = await minioClient.statObject(sourceBucket, sourceObject);
+		
+		// Copier vers la destination
+		await minioClient.putObject(destBucket, destObject, buffer, buffer.length, stat.metaData);
+		
+		return { success: true };
+	} catch (error) {
+		console.error('❌ Erreur lors de la copie:', error);
+		throw error;
+	}
+}
+
+/**
  * Liste les fichiers dans un bucket
  */
 export async function listFiles(bucketName: string, prefix?: string) {
