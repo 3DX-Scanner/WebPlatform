@@ -53,21 +53,80 @@ export async function initializeBuckets() {
 }
 
 /**
+ * Nettoie un nom pour qu'il soit conforme aux règles MinIO pour les noms de buckets
+ * Règles MinIO : 3-63 caractères, lettres minuscules, chiffres, points (.), tirets (-)
+ * Ne peut pas commencer ou finir par un point ou tiret
+ */
+function sanitizeBucketName(name: string): string {
+	return name
+		.toLowerCase()
+		.replace(/[^a-z0-9.-]/g, '-') // Remplacer les caractères invalides par des tirets
+		.replace(/^[-.]+|[-.]+$/g, '') // Supprimer les tirets/points au début et à la fin
+		.replace(/[-.]+/g, '-') // Remplacer les séquences de tirets/points par un seul tiret
+		.substring(0, 63); // Limiter à 63 caractères
+}
+
+/**
  * Crée un bucket pour un utilisateur s'il n'existe pas
  */
-export async function ensureUserBucket(userId: number): Promise<string> {
-	const bucketName = `user-${userId}`;
+export async function ensureUserBucket(userId: number, username: string): Promise<string> {
+	// Format: {sanitizedUsername}-{userId}
+	// Exemple: test-3 devient test-3
+	const sanitizedUsername = sanitizeBucketName(username);
+	const bucketName = `${sanitizedUsername}-${userId}`;
+	
+	// S'assurer que le nom fait au moins 3 caractères
+	if (bucketName.length < 3) {
+		throw new Error(`Nom de bucket trop court: ${bucketName}`);
+	}
 	
 	try {
 		const exists = await minioClient.bucketExists(bucketName);
 		if (!exists) {
 			await minioClient.makeBucket(bucketName, 'us-east-1');
 			console.log(`✅ Bucket utilisateur créé: ${bucketName}`);
+			
+			// Le bucket est privé par défaut (pas de politique publique)
+			// Les fichiers seront accessibles uniquement via des URLs présignées
 		}
 		return bucketName;
 	} catch (error) {
 		console.error(`❌ Erreur lors de la création du bucket ${bucketName}:`, error);
 		throw error;
+	}
+}
+
+/**
+ * Récupère le bucketName d'un utilisateur depuis la base de données
+ * Nécessite que prisma soit importé dans le fichier appelant
+ */
+export async function getUserBucket(userId: number): Promise<string | null> {
+	try {
+		// Import dynamique pour éviter les dépendances circulaires
+		const { prisma } = await import('./prisma');
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			select: { bucketName: true, username: true } as { bucketName: boolean; username: boolean }
+		});
+		
+		if (!user) {
+			return null;
+		}
+		
+		// Si l'utilisateur n'a pas de bucket, en créer un
+		if (!(user as any).bucketName && user.username) {
+			const bucketName = await ensureUserBucket(userId, user.username);
+			await prisma.user.update({
+				where: { id: userId },
+				data: { bucketName: bucketName } as { bucketName: string }
+			});
+			return bucketName;
+		}
+		
+		return (user as any).bucketName;
+	} catch (error) {
+		console.error(`❌ Erreur lors de la récupération du bucket pour l'utilisateur ${userId}:`, error);
+		return null;
 	}
 }
 /**
@@ -151,6 +210,40 @@ export async function deleteFile(bucketName: string, objectName: string) {
 		return { success: true };
 	} catch (error) {
 		console.error('❌ Erreur lors de la suppression:', error);
+		throw error;
+	}
+}
+
+/**
+ * Copie un fichier dans MinIO (utilisé pour renommer/déplacer)
+ */
+export async function copyFile(
+	sourceBucket: string,
+	sourceObject: string,
+	destBucket: string,
+	destObject: string
+) {
+	try {
+		// Pour MinIO, on utilise getObject puis putObject pour copier
+		// car copyObject peut avoir des limitations selon la version
+		const dataStream = await minioClient.getObject(sourceBucket, sourceObject);
+		
+		// Convertir le stream en buffer
+		const chunks: Buffer[] = [];
+		for await (const chunk of dataStream) {
+			chunks.push(chunk);
+		}
+		const buffer = Buffer.concat(chunks);
+		
+		// Obtenir les métadonnées de l'objet source
+		const stat = await minioClient.statObject(sourceBucket, sourceObject);
+		
+		// Copier vers la destination
+		await minioClient.putObject(destBucket, destObject, buffer, buffer.length, stat.metaData);
+		
+		return { success: true };
+	} catch (error) {
+		console.error('❌ Erreur lors de la copie:', error);
 		throw error;
 	}
 }

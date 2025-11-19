@@ -101,8 +101,8 @@
         </div>
 
         <div class="mt-6 flex items-center justify-end gap-3">
-            <ButtonComponent color="secondary" variant="outlined" href="" onClick={close}>Annuler</ButtonComponent>
-            <ButtonComponent color="primary" variant="raised" href="" onClick={save} disabled={loading || !!error || !newPassword || !confirmPassword}>
+            <ButtonComponent color="primary" variant="outlined" classe="h-10" href="" onClick={close}>Annuler</ButtonComponent>
+            <ButtonComponent color="primary" variant="raised" classe="h-10" href="" onClick={save} disabled={loading || !!error || !newPassword || !confirmPassword}>
                 {loading ? 'Enregistrement...' : 'Enregistrer'}
             </ButtonComponent>
         </div>

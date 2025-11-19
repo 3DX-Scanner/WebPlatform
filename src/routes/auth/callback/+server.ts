@@ -8,6 +8,7 @@ import {
 	GOOGLE_REDIRECT_URI, 
 	JWT_SECRET 
 } from '$env/static/private';
+import { ensureUserBucket } from '$lib/server/minio';
 
 interface GoogleTokenResponse {
 	access_token: string;
@@ -99,7 +100,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	}
 
 	// 4️⃣ Vérifier si l'utilisateur existe déjà
-	let user = await prisma.user.findUnique({
+	let user = await prisma.user.findFirst({
 		where: { email: userInfo.email }
 	});
 
@@ -108,6 +109,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const baseUsername = userInfo.name || userInfo.email.split('@')[0];
 		const uniqueUsername = await generateUniqueUsername(baseUsername);
 
+		// Créer l'utilisateur d'abord pour obtenir son ID
 		user = await prisma.user.create({
 			data: {
 				email: userInfo.email,
@@ -116,8 +118,27 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}
 		});
 
-		console.log(`✅ Nouvel utilisateur créé: ${userInfo.email} (username: ${uniqueUsername})`);
+		// Créer le bucket MinIO pour l'utilisateur avec son ID et username
+		const bucketName = await ensureUserBucket(user.id, user.username);
+		
+		// Mettre à jour l'utilisateur avec le nom du bucket
+		user = await prisma.user.update({
+			where: { id: user.id },
+			data: { bucketName: bucketName }
+		});
+
+		console.log(`✅ Nouvel utilisateur créé: ${userInfo.email} (username: ${uniqueUsername}, bucket: ${bucketName})`);
 	} else {
+		// Si l'utilisateur existe mais n'a pas de bucket, en créer un
+		if (!user.bucketName) {
+			const bucketName = await ensureUserBucket(user.id, user.username);
+			await prisma.user.update({
+				where: { id: user.id },
+				data: { bucketName: bucketName }
+			});
+			user.bucketName = bucketName;
+			console.log(`✅ Bucket créé pour l'utilisateur existant: ${bucketName}`);
+		}
 		console.log(`✅ Utilisateur existant connecté: ${userInfo.email}`);
 	}
 
@@ -130,7 +151,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			createdAt: user.createdAt
 		},
 		JWT_SECRET,
-		{ expiresIn: '1h' }
+		{ expiresIn: '7d' }
 	);
 
 	// 7️⃣ Enregistrer le token dans un cookie
@@ -139,7 +160,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		secure: false, // En dev, mettre à true en production
 		sameSite: 'lax', // 'lax' permet le cookie lors de redirections, 'strict' bloque
 		path: '/',
-		maxAge: 60 * 60 // 1 heure
+		maxAge: 60 * 60 * 24 * 7 // 7 jours
 	});
 
 	console.log('✅ Cookie JWT défini pour:', userInfo.email);

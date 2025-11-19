@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { uploadFile, ensureUserBucket } from '$lib/server/minio';
+import { uploadFile, getUserBucket, ensureUserBucket } from '$lib/server/minio';
+import { prisma } from '$lib/server/prisma';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	// Vérifier l'authentification
 	if (!locals.user) {
 		return json({ error: 'Non authentifié' }, { status: 401 });
 	}
@@ -12,8 +12,24 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const formData = await request.formData();
 		const file = formData.get('file') as File;
 		
-		// Créer le bucket de l'utilisateur s'il n'existe pas
-		const bucketName = await ensureUserBucket(locals.user.id);
+		// Récupérer ou créer le bucket de l'utilisateur
+		let bucketName = await getUserBucket(locals.user.id);
+		if (!bucketName) {
+			// Si pas de bucket, récupérer le username et créer le bucket
+			const user = await prisma.user.findUnique({
+				where: { id: locals.user.id },
+				select: { username: true }
+			});
+			if (user) {
+				bucketName = await ensureUserBucket(locals.user.id, user.username);
+				await prisma.user.update({
+					where: { id: locals.user.id },
+					data: { bucketName: bucketName } as { bucketName: string }
+				});
+			} else {
+				return json({ error: 'Utilisateur introuvable' }, { status: 404 });
+			}
+		}
 
 		if (!file) {
 			return json({ error: 'Aucun fichier fourni' }, { status: 400 });

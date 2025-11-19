@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { minioClient, listFiles, getPresignedUrl } from '$lib/server/minio';
+import { minioClient, listFiles, getPresignedUrl, getUserBucket } from '$lib/server/minio';
+import { prisma } from '$lib/server/prisma';
 
 interface Model3D {
 	id: string;
@@ -28,12 +29,18 @@ export const GET: RequestHandler = async ({ locals }) => {
 		}
 
 		const userId = locals.user.id;
-		const userBucket = `user-${userId}`;
+		
+		// Récupérer le bucketName de l'utilisateur depuis la BDD
+		const userBucket = await getUserBucket(userId);
+		if (!userBucket) {
+			console.log(`❌ Aucun bucket trouvé pour l'utilisateur ${userId}`);
+			return json({ success: true, models: [] });
+		}
 
-		// Vérifier si le bucket de l'utilisateur existe
+		// Vérifier si le bucket existe dans MinIO
 		const bucketExists = await minioClient.bucketExists(userBucket);
 		if (!bucketExists) {
-			console.log(`❌ Bucket ${userBucket} n'existe pas`);
+			console.log(`❌ Bucket ${userBucket} n'existe pas dans MinIO`);
 			return json({ success: true, models: [] });
 		}
 
@@ -72,15 +79,15 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 			const model = modelMap.get(folderName);
 
-			// Générer l'URL via l'API proxy
-			const fileUrl = `/api/models/file?bucket=${encodeURIComponent(userBucket)}&path=${encodeURIComponent(file.name)}`;
+			// Générer une URL présignée pour accéder au fichier privé (valide 1 heure)
+			const presignedUrl = await getPresignedUrl(userBucket, file.name, 3600);
 
 			if (ext === 'glb' || ext === 'gltf') {
-				model.modelPath = fileUrl;
+				model.modelPath = presignedUrl;
 			} else if (ext === 'ply') {
-				model.plyPath = fileUrl;
+				model.plyPath = presignedUrl;
 			} else if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'webp') {
-				model.image = fileUrl;
+				model.image = presignedUrl;
 			}
 		}
 
@@ -95,8 +102,36 @@ export const GET: RequestHandler = async ({ locals }) => {
 				return model;
 			});
 
+		// Calculer le stockage utilisé
+		let totalStorageUsed = 0;
+		for (const file of files) {
+			totalStorageUsed += file.size || 0;
+		}
+
+		// Récupérer le nombre de modèles likés par l'utilisateur
+		let likedModelsCount = 0;
+		try {
+			// @ts-ignore - Le modèle ModelLike sera disponible après la génération du client Prisma
+			likedModelsCount = await prisma.modelLike.count({
+				where: { userId: userId }
+			});
+		} catch (error) {
+			console.warn('⚠️  Impossible de compter les likes (table peut-être non créée):', error);
+		}
+
+		const stats = {
+			bucketName: userBucket,
+			totalModels: userModels.length,
+			likedModelsCount: likedModelsCount,
+			storageUsed: totalStorageUsed,
+			storageLimit: 1024 * 1024 * 1024, // 1 Go en bytes
+			storageUsedMB: (totalStorageUsed / (1024 * 1024)).toFixed(2),
+			storageLimitMB: 1024,
+			storagePercentage: ((totalStorageUsed / (1024 * 1024 * 1024)) * 100).toFixed(1)
+		};
+
 		console.log(`✅ ${userModels.length} modèles trouvés pour l'utilisateur ${userId}`);
-		return json({ success: true, models: userModels });
+		return json({ success: true, models: userModels, stats });
 	} catch (error) {
 		console.error('❌ Erreur lors de la récupération des modèles utilisateur:', error);
 		return json({ error: 'Erreur lors de la récupération des modèles' }, { status: 500 });

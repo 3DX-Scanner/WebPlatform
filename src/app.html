@@ -5,6 +5,28 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link href="https://fonts.googleapis.com/css?family=Inter:400,500,700&display=swap" rel="stylesheet">
+		<!-- Script de blocage pour éviter le flash de contenu (FOUC) -->
+		<script>
+			(function() {
+				try {
+					// 1. Vérifier localStorage
+					const savedTheme = localStorage.getItem('theme');
+					if (savedTheme === 'dark') {
+						document.documentElement.classList.add('dark');
+					} else if (savedTheme === 'light') {
+						document.documentElement.classList.remove('dark');
+					} 
+					// 2. Si pas de thème sauvegardé, vérifier les préférences système
+					else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+						document.documentElement.classList.add('dark');
+					} else {
+						document.documentElement.classList.remove('dark');
+					}
+				} catch (e) {
+					// En cas d'erreur, ne rien faire (mode clair par défaut)
+				}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
     <body data-sveltekit-preload-data="hover" data-sveltekit-preload-code="hover">

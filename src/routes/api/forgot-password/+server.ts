@@ -12,7 +12,7 @@ export const POST = async ({ request }) => {
 		const { email } = await request.json();
 		if (!email) return json({ error: 'Adresse email requise.' }, { status: 400 });
 
-		const user = await prisma.user.findUnique({ where: { email } });
+		const user = await prisma.user.findFirst({ where: { email } });
 
 		// Toujours répondre pareil (sécurité)
 		if (!user) {

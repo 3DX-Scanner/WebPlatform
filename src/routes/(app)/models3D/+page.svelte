@@ -5,32 +5,43 @@
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
     import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
+    import ImportModelPopupComponent from '$lib/components/ImportModelPopup/ImportModelPopupComponent.svelte';
+    import EditModelPopupComponent from '$lib/components/EditModelPopup/EditModelPopupComponent.svelte';
+    import ConfirmDialogComponent from '$lib/components/ConfirmDialog/ConfirmDialogComponent.svelte';
 
-    let isAuthenticated = false;
-    let searchQuery = '';
-    let selectedCategory = '';
-    let sortBy = '';
-    let pageKey = 0;
-    let isLoading = true;
-    let loadError = '';
+    let { data } = $props();
+    let isAuthenticated = data?.isAuthenticated ?? false;
+    let searchQuery = $state('');
+    let selectedCategory = $state('');
+    let sortBy = $state('');
+    let pageKey = $state(0);
+    let isLoading = $state(true);
+    let loadError = $state('');
 
-    let currentPopup = {
+    let currentPopup = $state({
         isOpen: false,
         title: '',
         category: '',
         modelPath: ''
-    };
+    });
 
-    let models: any[] = [];
-    let filteredModels: any[] = [];
-    let categories: string[] = [];
+    let importPopupOpen = $state(false);
+    let editPopupOpen = $state(false);
+    let deleteConfirmOpen = $state(false);
+    let selectedModelForEdit: any = $state(null);
+    let selectedModelForDelete: any = $state(null);
+    let selectedModelId: number | null = $state(null);
+
+    let models = $state<any[]>([]);
 
     async function loadModels() {
         isLoading = true;
         loadError = '';
         
         try {
-            const response = await fetch('/api/models');
+            const response = await fetch('/api/models', {
+                credentials: 'include' // Inclure les cookies pour l'authentification
+            });
             const data = await response.json();
             
             if (!response.ok) {
@@ -38,7 +49,6 @@
             }
             
             models = data.models || [];
-            filteredModels = [...models];
             isLoading = false;
         } catch (error) {
             console.error('Erreur lors du chargement des modèles:', error);
@@ -57,9 +67,6 @@
         searchQuery = '';
         selectedCategory = '';
         sortBy = '';
-        if (models.length > 0) {
-            filteredModels = [...models];
-        }
         pageKey++;
     }
 
@@ -97,8 +104,8 @@
         return filtered;
     }
 
-    $: filteredModels = filterAndSortModels(models, searchQuery, selectedCategory, sortBy);
-    $: categories = Array.from(new Set(models.map((m) => m.category))).sort();
+    let filteredModels = $derived(filterAndSortModels(models, searchQuery, selectedCategory, sortBy));
+    let categories = $derived(Array.from(new Set(models.map((m) => m.category))).sort());
 
     function handleSearchChange(value: string) {
         searchQuery = value;
@@ -114,6 +121,7 @@
     }
 
     function openModelPopup(model: any) {
+        selectedModelId = model.id;
         currentPopup = {
             isOpen: true,
             title: model.title,
@@ -124,6 +132,7 @@
 
     function closePopup() {
         currentPopup.isOpen = false;
+        selectedModelId = null;
     }
 
     async function downloadModel(event: CustomEvent) {
@@ -143,24 +152,128 @@
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
-            console.log(`Téléchargement de ${title} réussi`);
         } catch (error) {
             console.error('Erreur lors du téléchargement:', error);
             alert('Erreur lors du téléchargement du modèle. Vérifiez que le fichier existe.');
+        }
+    }
+
+    function handleOpenImport() {
+        if (!isAuthenticated) {
+            alert('Vous devez être connecté pour importer un modèle.');
+            return;
+        }
+        importPopupOpen = true;
+    }
+
+    function handleCloseImport() {
+        importPopupOpen = false;
+    }
+
+    function handleModelUploaded() {
+        // Recharger les modèles après l'upload
+        loadModels();
+    }
+
+    function handleEditModel(model: any) {
+        if (!isAuthenticated) {
+            alert('Vous devez être connecté pour modifier un modèle.');
+            return;
+        }
+        selectedModelForEdit = model;
+        editPopupOpen = true;
+    }
+
+    function handleCloseEdit() {
+        editPopupOpen = false;
+        selectedModelForEdit = null;
+    }
+
+    function handleModelUpdated() {
+        // Recharger les modèles après la modification
+        loadModels();
+    }
+
+    function handleDeleteModel(model: any) {
+        selectedModelForDelete = model;
+        deleteConfirmOpen = true;
+    }
+
+    function handleDeleteConfirm() {
+        if (!selectedModelForDelete) return;
+        
+        const model = selectedModelForDelete;
+        const folderName = model.id.split('/').slice(1).join('/');
+        
+        // Fermer la popup
+        deleteConfirmOpen = false;
+        
+        // Effectuer la suppression
+        performDelete(model, folderName);
+        
+        selectedModelForDelete = null;
+    }
+
+    function handleDeleteCancel() {
+        selectedModelForDelete = null;
+        deleteConfirmOpen = false;
+    }
+
+    async function performDelete(model: any, folderName: string) {
+        try {
+            const response = await fetch(`/api/models/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    bucketName: model.bucketName,
+                    folderName: folderName
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors de la suppression');
+            }
+
+            // Recharger les modèles après la suppression
+            loadModels();
+        } catch (error: any) {
+            console.error('Erreur lors de la suppression:', error);
+            alert(error.message || 'Erreur lors de la suppression du modèle. Veuillez réessayer.');
         }
     }
 </script>
 
 <div class="min-h-screen bg-gray-50">
 
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <section class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {#if isLoading}
-            <div class="flex items-center justify-center min-h-[400px]">
-                <div class="text-center">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    <p class="mt-4 text-gray-600">Chargement des modèles...</p>
-                </div>
+            <!-- Skeleton Loader -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                {#each Array(10) as _}
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden animate-pulse">
+                        <!-- Image skeleton -->
+                        <div class="w-full h-48 bg-gray-200 dark:bg-gray-700"></div>
+                        
+                        <!-- Content skeleton -->
+                        <div class="p-4 space-y-3">
+                            <!-- Badge skeleton -->
+                            <div class="flex items-center gap-2">
+                                <div class="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                            </div>
+                            
+                            <!-- Title skeleton -->
+                            <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                            
+                            <!-- Subtitle skeleton -->
+                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                        </div>
+                    </div>
+                {/each}
             </div>
         {:else if loadError}
             <EmptyStateComponent 
@@ -175,13 +288,20 @@
                 {categories}
                 onSearchChange={handleSearchChange}
                 onCategoryChange={handleCategoryChange}
+                on:openImport={handleOpenImport}
             />
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {#each filteredModels as model (model.id)}
                     <ModelCardComponent 
                         {model}
+                        isSelected={selectedModelId === model.id && currentPopup.isOpen}
                         onClick={() => openModelPopup(model)}
+                        showMenu={isAuthenticated && !model.isPublic}
+                        {isAuthenticated}
+                        onEdit={() => handleEditModel(model)}
+                        onDelete={() => handleDeleteModel(model)}
+                        onLike={() => {}}
                     />
                 {/each}
             </div>
@@ -203,5 +323,31 @@
         modelPath={currentPopup.modelPath}
         on:close={closePopup}
         on:download={downloadModel}
+    />
+
+    <ImportModelPopupComponent
+        isOpen={importPopupOpen}
+        on:close={handleCloseImport}
+        on:uploaded={handleModelUploaded}
+    />
+
+    <EditModelPopupComponent
+        isOpen={editPopupOpen}
+        model={selectedModelForEdit}
+        on:close={handleCloseEdit}
+        on:updated={handleModelUpdated}
+    />
+
+    <ConfirmDialogComponent
+        isOpen={deleteConfirmOpen}
+        title="Supprimer le modèle"
+        message={selectedModelForDelete 
+            ? `Êtes-vous sûr de vouloir supprimer le modèle "${selectedModelForDelete.id.split('/').slice(1).join('/')}" ?\n\nCette action est irréversible et supprimera tous les fichiers associés.`
+            : ''}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        variant="danger"
+        on:confirm={handleDeleteConfirm}
+        on:cancel={handleDeleteCancel}
     />
 </div>

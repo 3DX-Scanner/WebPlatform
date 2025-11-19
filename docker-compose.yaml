@@ -34,6 +34,8 @@ services:
     command: npx prisma studio --port 5555 --browser none
     ports:
       - "5555:5555"
+    environment:
+      - PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
     env_file:
       - .env.prod
     networks:

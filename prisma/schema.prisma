@@ -9,12 +9,14 @@ generator client {
 }
 
 model User {
-  id        Int          @id @default(autoincrement())
-  email     String
-  username  String
-  password  String
-  createdAt DateTime     @default(now())
-  devices   UserDevice[]
+  id         Int          @id @default(autoincrement())
+  email      String
+  username   String
+  password   String
+  bucketName String?      @unique
+  createdAt  DateTime     @default(now())
+  devices    UserDevice[]
+  modelLikes ModelLike[]
 
   @@unique([email, username])
 }
@@ -43,4 +45,15 @@ model DeviceModel {
   id      Int      @id @default(autoincrement())
   name    String   @unique
   devices Device[]
+}
+
+model ModelLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  modelId   String   // Identifiant du modèle (bucketName/folderName)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, modelId])
+  @@index([modelId])
 }

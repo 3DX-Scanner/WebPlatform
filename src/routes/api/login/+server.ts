@@ -26,19 +26,19 @@ export async function POST({ request, cookies }) {
 			return json({ error: 'Mot de passe incorrect' }, { status: 401 });
 		}
 
-		const token = jwt.sign(
-		{ id: user.id, email: user.email, username: user.username, createdAt: user.createdAt },
-		JWT_SECRET,
-		{ expiresIn: '1h' }
-		);
+	const token = jwt.sign(
+	{ id: user.id, email: user.email, username: user.username, createdAt: user.createdAt },
+	JWT_SECRET,
+	{ expiresIn: '7d' }
+	);
 
-		cookies.set('jwt', token, {
-			httpOnly: true,
-			secure: false, // En dev, mettre à true en production
-			sameSite: 'lax',
-			path: '/',
-			maxAge: 60 * 60 // 1 heure
-		});
+	cookies.set('jwt', token, {
+		httpOnly: true,
+		secure: false, // En dev, mettre à true en production
+		sameSite: 'lax',
+		path: '/',
+		maxAge: 60 * 60 * 24 * 7 // 7 jours
+	});
 
 		return json({ success: true });
 	} catch (err) {

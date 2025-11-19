@@ -73,6 +73,11 @@ body {
     line-height: 1.5;
 }
 
+/* Désactiver le padding-top pour la page editor */
+body.editor-page {
+    padding-top: 0 !important;
+}
+
 .dark body {
     background-color: #111827 !important;
     color: #ffffff !important;
