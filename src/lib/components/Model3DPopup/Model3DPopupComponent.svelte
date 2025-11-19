@@ -20,8 +20,8 @@
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{title} - Visualisation Interactive</h2>
                 <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl leading-none transition-colors" onclick={closePopup}>✕</button>
             </div>
-            <div class="w-full flex justify-center mb-4">
-                <div class="px-8">
+            <div class="w-full flex justify-center mb-4 px-4">
+                <div class="w-full max-w-[1200px]">
                     <ThreeDViewverComponent bind:this={viewerRef} {modelPath} width={1200} height={550} noCard={true} />
                 </div>
             </div>

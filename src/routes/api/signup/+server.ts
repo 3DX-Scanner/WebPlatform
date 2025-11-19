@@ -63,26 +63,26 @@ export async function POST({ request, cookies }: RequestEvent) {
 			where: { id: newUser.id }
 		});
 
-		// 🎟️ Génération du JWT
-		const token = jwt.sign(
-			{
-				id: updatedUser!.id,
-				email: updatedUser!.email,
-				username: updatedUser!.username,
-				createdAt: updatedUser!.createdAt
-			},
-			JWT_SECRET,
-			{ expiresIn: '1h' }
-		);
+	// 🎟️ Génération du JWT
+	const token = jwt.sign(
+		{
+			id: updatedUser!.id,
+			email: updatedUser!.email,
+			username: updatedUser!.username,
+			createdAt: updatedUser!.createdAt
+		},
+		JWT_SECRET,
+		{ expiresIn: '7d' }
+	);
 
-		// 🍪 Enregistrement du token dans un cookie HTTP-only
-		cookies.set('jwt', token, {
-			httpOnly: true,
-			secure: false, // mettre à true en prod
-			sameSite: 'lax',
-			path: '/',
-			maxAge: 60 * 60
-		});
+	// 🍪 Enregistrement du token dans un cookie HTTP-only
+	cookies.set('jwt', token, {
+		httpOnly: true,
+		secure: false, // mettre à true en prod
+		sameSite: 'lax',
+		path: '/',
+		maxAge: 60 * 60 * 24 * 7 // 7 jours
+	});
 
 		return json({ message: 'Utilisateur créé avec succès' });
 	} catch (error: any) {

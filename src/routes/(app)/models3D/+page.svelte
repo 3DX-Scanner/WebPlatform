@@ -254,11 +254,28 @@
 
     <section class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {#if isLoading}
-            <div class="flex items-center justify-center min-h-[400px]">
-                <div class="text-center">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    <p class="mt-4 text-gray-600">Chargement des modèles...</p>
-                </div>
+            <!-- Skeleton Loader -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                {#each Array(10) as _}
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden animate-pulse">
+                        <!-- Image skeleton -->
+                        <div class="w-full h-48 bg-gray-200 dark:bg-gray-700"></div>
+                        
+                        <!-- Content skeleton -->
+                        <div class="p-4 space-y-3">
+                            <!-- Badge skeleton -->
+                            <div class="flex items-center gap-2">
+                                <div class="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                            </div>
+                            
+                            <!-- Title skeleton -->
+                            <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                            
+                            <!-- Subtitle skeleton -->
+                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                        </div>
+                    </div>
+                {/each}
             </div>
         {:else if loadError}
             <EmptyStateComponent 

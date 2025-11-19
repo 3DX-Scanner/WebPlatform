@@ -9,6 +9,7 @@
   import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
   import { Maximize2, X } from 'lucide-svelte';
+  import { theme } from '$lib/stores/theme';
 
   let { 
     modelPath, 
@@ -42,7 +43,8 @@
 
   function initializeScene() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    // Couleur de fond selon le thème
+    scene.background = new THREE.Color($theme === 'dark' ? 0x1a1a1a : 0xf0f0f0);
 
     camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.position.set(0, 0, 5);
@@ -57,6 +59,12 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
+    
+    // Style le canvas pour être responsive
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+    renderer.domElement.style.display = 'block';
+    
     container.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -73,9 +81,10 @@
     directionalLight2.position.set(-10, -10, -5);
     scene.add(directionalLight2);
 
-    // Ajouter une grille de référence
-    // Couleurs adaptées pour être visibles sur fond clair et sombre
-    gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0x444444);
+    // Ajouter une grille de référence avec couleurs adaptées au thème
+    const gridColor1 = $theme === 'dark' ? 0x555555 : 0x888888;
+    const gridColor2 = $theme === 'dark' ? 0x333333 : 0x444444;
+    gridHelper = new THREE.GridHelper(20, 20, gridColor1, gridColor2);
     scene.add(gridHelper);
 
     controls = new OrbitControls(camera, renderer.domElement);
@@ -556,6 +565,42 @@
     }
   });
 
+  // Mettre à jour les couleurs quand le thème change
+  $effect(() => {
+    const currentTheme = $theme; // Capture du thème pour la réactivité
+    
+    if (scene && gridHelper && renderer) {
+      console.log('🎨 Mise à jour du thème 3D:', currentTheme);
+      
+      // Mettre à jour la couleur de fond
+      scene.background = new THREE.Color(currentTheme === 'dark' ? 0x1a1a1a : 0xf0f0f0);
+      
+      // Mettre à jour les couleurs de la grille
+      const gridColor1 = currentTheme === 'dark' ? 0x555555 : 0x888888;
+      const gridColor2 = currentTheme === 'dark' ? 0x333333 : 0x444444;
+      
+      // Retirer l'ancienne grille
+      scene.remove(gridHelper);
+      if (gridHelper.geometry) gridHelper.geometry.dispose();
+      if (gridHelper.material) {
+        if (Array.isArray(gridHelper.material)) {
+          gridHelper.material.forEach((mat: THREE.Material) => mat.dispose());
+        } else {
+          gridHelper.material.dispose();
+        }
+      }
+      
+      // Créer une nouvelle grille avec les nouvelles couleurs
+      gridHelper = new THREE.GridHelper(20, 20, gridColor1, gridColor2);
+      scene.add(gridHelper);
+      
+      // Forcer le rendu pour afficher les changements immédiatement
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+  });
+
   function animate() {
     requestAnimationFrame(animate);
     if (controls) controls.update();
@@ -565,21 +610,38 @@
   }
 
   const handleResize = () => {
+    if (!container || !camera || !renderer) return;
+    
     const newWidth = container.clientWidth;
     const newHeight = container.clientHeight;
     
-    camera.aspect = newWidth / newHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(newWidth, newHeight);
+    if (newWidth > 0 && newHeight > 0) {
+      camera.aspect = newWidth / newHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(newWidth, newHeight, false);
+    }
   };
 
   onMount(() => {
     initializeScene();
     loadCurrentModel();
 
+    // Utiliser ResizeObserver pour surveiller le conteneur directement
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        handleResize();
+      }
+    });
+    
+    if (container) {
+      resizeObserver.observe(container);
+    }
+
+    // Garder window resize comme fallback
     window.addEventListener('resize', handleResize);
     
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       if (renderer) {
         renderer.dispose();
@@ -597,18 +659,14 @@
     if (!document.fullscreenElement) {
       container.requestFullscreen().then(() => {
         isFullscreen = true;
-        const newWidth = window.innerWidth;
-        const newHeight = window.innerHeight;
-        camera.aspect = newWidth / newHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(newWidth, newHeight);
+        // Le ResizeObserver va gérer le redimensionnement automatiquement
+        setTimeout(handleResize, 100);
       });
     } else {
       document.exitFullscreen().then(() => {
         isFullscreen = false;
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-        renderer.setSize(width, height);
+        // Le ResizeObserver va gérer le redimensionnement automatiquement
+        setTimeout(handleResize, 100);
       });
     }
   }
@@ -621,22 +679,41 @@
 </script>
 
 <div 
-  class="{noCard ? 'rounded-xl overflow-hidden shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] relative mx-auto' : 'rounded-xl overflow-hidden shadow-2xl bg-gray-100 relative'}" 
+  class="{noCard ? 'rounded-xl overflow-hidden shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] relative mx-auto w-full' : 'rounded-xl overflow-hidden shadow-2xl bg-gray-100 relative w-full'}" 
   bind:this={container} 
-  style="width: {width}px; height: {height}px;"
+  style="max-width: {width}px; max-height: {height}px; aspect-ratio: {width}/{height};"
 >
   {#if isLoading}
-    <div class="absolute inset-0 {noCard ? 'bg-white/90 dark:bg-gray-800/90' : 'bg-gray-100/90'} flex flex-col items-center justify-center z-10">
-      <div class="w-10 h-10 border-4 {noCard ? 'border-gray-300 dark:border-gray-600 border-t-blue-600 dark:border-t-blue-400' : 'border-gray-300 border-t-blue-600'} rounded-full animate-spin mb-4"></div>
-      <div class="text-lg {noCard ? 'text-gray-800 dark:text-white' : 'text-gray-800'} mb-4">{loadingMessage}</div>
-      <div class="w-52 h-1 {noCard ? 'bg-gray-300 dark:bg-gray-600' : 'bg-gray-300'} rounded-sm overflow-hidden">
+    <div class="absolute inset-0 flex flex-col items-center justify-center z-10" style="background-color: {$theme === 'dark' ? 'rgba(0, 0, 0, 0.95)' : 'rgba(255, 255, 255, 0.95)'}">
+      <!-- Spinner avec animation bien visible -->
+      <div class="relative mb-6">
+        <div class="w-16 h-16 rounded-full border-4 border-transparent" style="border-top-color: {$theme === 'dark' ? '#60a5fa' : '#2563eb'}; border-right-color: {$theme === 'dark' ? '#60a5fa' : '#2563eb'}; animation: spin 0.8s linear infinite;"></div>
+        <div class="absolute inset-0 w-16 h-16 rounded-full" style="border: 4px solid {$theme === 'dark' ? 'rgba(55, 65, 81, 0.3)' : 'rgba(229, 231, 235, 0.5)'}"></div>
+      </div>
+      
+      <!-- Message de chargement -->
+      <div class="text-lg font-semibold mb-4" style="color: {$theme === 'dark' ? '#e5e7eb' : '#1f2937'}">{loadingMessage}</div>
+      
+      <!-- Barre de progression -->
+      <div class="w-64 h-2 rounded-full overflow-hidden" style="background-color: {$theme === 'dark' ? '#374151' : '#e5e7eb'}">
         <div 
-          class="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-300 ease-out" 
-          style="width: {loadingProgress}%"
+          class="h-full transition-all duration-300 ease-out rounded-full" 
+          style="width: {loadingProgress}%; background: linear-gradient(to right, {$theme === 'dark' ? '#60a5fa, #93c5fd' : '#2563eb, #3b82f6'})"
         ></div>
       </div>
     </div>
   {/if}
+  
+  <style>
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
   
   {#if showControls}
     <div class="absolute top-2.5 right-2.5 flex flex-col gap-2 z-[5]">

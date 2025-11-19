@@ -151,7 +151,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			createdAt: user.createdAt
 		},
 		JWT_SECRET,
-		{ expiresIn: '1h' }
+		{ expiresIn: '7d' }
 	);
 
 	// 7️⃣ Enregistrer le token dans un cookie
@@ -160,7 +160,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		secure: false, // En dev, mettre à true en production
 		sameSite: 'lax', // 'lax' permet le cookie lors de redirections, 'strict' bloque
 		path: '/',
-		maxAge: 60 * 60 // 1 heure
+		maxAge: 60 * 60 * 24 * 7 // 7 jours
 	});
 
 	console.log('✅ Cookie JWT défini pour:', userInfo.email);

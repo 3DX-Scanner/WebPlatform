@@ -231,20 +231,20 @@
                 </span>
                 {#if !model.isPublic && isAuthenticated}
                     <button
-                        class="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 {isLiked ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                        class="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 {isLiked ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-500 hover:bg-red-200 dark:hover:bg-red-900/50' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
                         onclick={handleLike}
                         disabled={isLiking}
                         title={isLiked ? 'Retirer le like' : 'Ajouter un like'}
                     >
                         <svg 
-                            class="w-3.5 h-3.5 {isLiked ? 'fill-current' : ''}" 
+                            class="w-3.5 h-3.5 {isLiked ? 'fill-current text-red-600 dark:text-red-500' : 'text-gray-600 dark:text-gray-300'}" 
                             fill={isLiked ? 'currentColor' : 'none'} 
                             stroke="currentColor" 
                             viewBox="0 0 24 24"
                         >
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
-                        <span>{likesCount}</span>
+                        <span class="{isLiked ? 'text-red-600 dark:text-red-500' : ''}">{likesCount}</span>
                     </button>
                 {/if}
             </div>
