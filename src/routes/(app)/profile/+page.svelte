@@ -1,49 +1,38 @@
 <script lang="ts">
-    import { Input } from '$lib/components/ui/input';
-    import { Label } from '$lib/components/ui/label';
-    import { goto } from '$app/navigation';
-    import { onMount, tick } from 'svelte';
-    import { Button } from '$lib/components/ui/button';
+    import {Input} from '$lib/components/ui/input';
+    import {Label} from '$lib/components/ui/label';
+    import {goto} from '$app/navigation';
+    import {onMount, tick} from 'svelte';
+    import {Button} from '$lib/components/ui/button';
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
     import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
-    import { Empty } from '$lib/components/ui/empty';
+    import {Empty} from '$lib/components/ui/empty';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
-    import { theme, toggleTheme } from '$lib/stores/theme';
 
     export let data: {
-    user: {
-      id: number;
-      username: string;
-      email: string;
-      createdAt: string;
-      hasPassword: boolean;
+        user: {
+            id: number;
+            username: string;
+            email: string;
+            createdAt: string;
+            hasPassword: boolean;
         };
     };
 
     let selectedSection: string = 'securite';
-    let language: 'fr' | 'en' = 'fr';
     let editingPassword = false;
     let showPwdModal = false;
     let currentPassword = '';
     let newPassword = '';
     let confirmPassword = '';
     let passwordError = '';
-    // Changement de username
+
     let editingUsername = false;
     let newUsername = '';
     let usernameError = '';
     let leftCardEl: HTMLDivElement;
     let rightCardEl: HTMLDivElement;
-
-    // Modèles 3D
-    let userModels: any[] = [];
-    let filteredUserModels: any[] = [];
-    let userModelCategories: string[] = [];
-    let searchQuery = '';
-    let selectedCategory = '';
-    let isLoadingModels = false;
-    let loadModelsError = '';
 
     let currentPopup = {
         isOpen: false,
@@ -62,57 +51,6 @@
 
     $: syncHeights();
 
-    async function loadUserModels() {
-        isLoadingModels = true;
-        loadModelsError = '';
-        
-        try {
-            const response = await fetch('/api/user-models');
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || 'Erreur lors du chargement des modèles');
-            }
-            
-            userModels = data.models || [];
-            filteredUserModels = [...userModels];
-            isLoadingModels = false;
-        } catch (error) {
-            console.error('Erreur lors du chargement des modèles:', error);
-            loadModelsError = 'Impossible de charger vos modèles.';
-            isLoadingModels = false;
-        }
-    }
-
-    function filterAndSortUserModels(list: typeof userModels, search: string, categoryFilter: string) {
-        const normalize = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-        const q = normalize(search.trim());
-
-        let filtered = list.filter(model => {
-            const title = normalize(model.title);
-            const subtitle = normalize(model.subtitle);
-            const content = normalize(model.content);
-            const category = normalize(model.category);
-
-            const matchesSearch = q === '' || title.includes(q) || subtitle.includes(q) || content.includes(q) || category.includes(q);
-            const matchesCategory = !categoryFilter || model.category === categoryFilter;
-            return matchesSearch && matchesCategory;
-        });
-
-        return filtered;
-    }
-
-    $: filteredUserModels = filterAndSortUserModels(userModels, searchQuery, selectedCategory);
-    $: userModelCategories = Array.from(new Set(userModels.map((m) => m.category))).sort();
-
-    function handleSearchChange(value: string) {
-        searchQuery = value;
-    }
-
-    function handleCategoryChange(value: string) {
-        selectedCategory = value;
-    }
-
     function openModelPopup(model: any) {
         currentPopup = {
             isOpen: true,
@@ -127,13 +65,13 @@
     }
 
     async function downloadModel(event: CustomEvent) {
-        const { modelPath, title } = event.detail;
+        const {modelPath, title} = event.detail;
         try {
             const response = await fetch(modelPath);
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`);
             }
-            
+
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -143,7 +81,7 @@
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
+
             console.log(`Téléchargement de ${title} réussi`);
         } catch (error) {
             console.error('Erreur lors du téléchargement:', error);
@@ -153,7 +91,6 @@
 
     onMount(() => {
         syncHeights();
-        loadUserModels();
         const onResize = () => syncHeights();
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
@@ -166,7 +103,7 @@
             if (newPassword && confirmPassword && newPassword !== confirmPassword) passwordError = 'Les mots de passe ne correspondent pas.';
         }
     }
-    
+
     $: validatePasswords();
 
     function resetPasswordForm() {
@@ -182,8 +119,8 @@
         try {
             const res = await fetch('/api/change-password', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({currentPassword, newPassword, confirmPassword}),
                 credentials: 'include'
             });
 
@@ -245,16 +182,16 @@
         if (!newUsername || newUsername === data.user.username) {
             return false;
         }
-        
+
         if (newUsername.length < 3 || newUsername.length > 30) {
             return false;
         }
-        
+
         const usernameRegex = /^[a-zA-Z0-9_-]+$/;
         if (!usernameRegex.test(newUsername)) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -269,23 +206,23 @@
     async function saveUsername() {
         // Validation côté client avant envoi
         usernameError = '';
-        
+
         if (!newUsername) {
             usernameError = 'Le nom d\'utilisateur ne peut pas être vide';
             return;
         }
-        
+
         if (newUsername.length < 3 || newUsername.length > 30) {
             usernameError = 'Le nom d\'utilisateur doit contenir entre 3 et 30 caractères';
             return;
         }
-        
+
         const usernameRegex = /^[a-zA-Z0-9_-]+$/;
         if (!usernameRegex.test(newUsername)) {
             usernameError = 'Uniquement lettres, chiffres, tirets et underscores autorisés';
             return;
         }
-        
+
         if (newUsername === data.user.username) {
             usernameError = 'Le nouveau nom d\'utilisateur est identique à l\'actuel';
             return;
@@ -294,8 +231,8 @@
         try {
             const res = await fetch('/api/change-username', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newUsername }),
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({newUsername}),
                 credentials: 'include'
             });
 
@@ -320,7 +257,8 @@
 <div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4 bg-muted">
     <div class="w-full max-w-6xl mx-auto grid gap-5 grid-cols-[340px_1fr] items-stretch">
         <aside>
-            <div class="bg-card backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full" bind:this={leftCardEl}>
+            <div class="bg-card backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full"
+                 bind:this={leftCardEl}>
                 <div class="w-24 h-24 rounded-full grid place-items-center bg-primary text-primary-foreground text-4xl font-bold">
                     {data.user.email.charAt(0).toUpperCase()}
                 </div>
@@ -332,29 +270,29 @@
 
                 <ul class="w-full grid gap-3 mt-4" role="tablist">
                     {#each [
-                        { id: 'securite', label: 'Sécurité du compte' },
-                        { id: 'preferences', label: 'Préférences' },
-                        { id: 'appareils', label: 'Mes appareils' },
-                        { id: 'abonnement', label: 'Abonnement' }
+                        {id: 'devices', label: 'Appareils'},
+                        {id: 'security', label: 'Sécurité du compte'},
+                        {id: 'preferences', label: 'Préférences'},
+                        {id: 'subscription', label: 'Abonnement'}
                     ] as section}
                         <li>
                             <button
-                                type="button"
-                                role="tab"
-                                class="w-full text-left rounded-xl px-4 py-3 font-semibold transition-colors duration-200"
-                                class:bg-accent={selectedSection === section.id}
-                                class:text-accent-foreground={selectedSection === section.id}
-                                class:bg-secondary={selectedSection !== section.id}
-                                class:text-secondary-foreground={selectedSection !== section.id}
-                                aria-selected={selectedSection === section.id}
-                                onclick={() => handleSectionChange(section.id)}
+                                    type="button"
+                                    role="tab"
+                                    class="w-full text-left rounded-xl px-4 py-3 font-semibold transition-colors duration-200"
+                                    class:bg-accent={selectedSection === section.id}
+                                    class:text-accent-foreground={selectedSection === section.id}
+                                    class:bg-secondary={selectedSection !== section.id}
+                                    class:text-secondary-foreground={selectedSection !== section.id}
+                                    aria-selected={selectedSection === section.id}
+                                    onclick={() => handleSectionChange(section.id)}
                             >
                                 {section.label}
                             </button>
                         </li>
                     {/each}
                 </ul>
-                
+
                 <div class="mt-5 flex justify-center">
                     <Button variant="default" onclick={handleLogout}>
                         Se déconnecter
@@ -365,208 +303,179 @@
 
         <main>
             <div class="bg-card rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
-            {#if selectedSection==='securite'}
-                <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Sécurité du compte</h3>
-                    <div class="flex flex-col items-center gap-5">
-                        <div class="grid gap-3 w-full max-w-[500px]">
-                            {#if data.user.hasPassword}
-                                {#if !editingPassword}
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-foreground">Mot de passe</span>
-                                        <Button variant="default" class="w-64" onclick={() => { showPwdModal = true; }}>
-                                            Changer le mot de passe
-                                        </Button>
+                {#if selectedSection === 'devices'}
+                    <section class="mb-4">
+                        <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Appareils</h3>
+                    </section>
+                {:else if selectedSection === 'security'}
+                    <section class="mb-4">
+                        <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Sécurité du compte</h3>
+                        <div class="flex flex-col items-center gap-5">
+                            <div class="grid gap-3 w-full max-w-[500px]">
+                                {#if data.user.hasPassword}
+                                    {#if !editingPassword}
+                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                            <span class="font-bold text-foreground">Mot de passe</span>
+                                            <Button variant="default" class="w-64"
+                                                    onclick={() => { showPwdModal = true; }}>
+                                                Changer le mot de passe
+                                            </Button>
+                                        </div>
+                                    {:else}
+                                        <div class="grid gap-3">
+                                            <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                                <Label for="currentPassword" class="font-bold text-foreground">Mot de
+                                                    passe actuel</Label>
+                                                <Input id="currentPassword" type="password"
+                                                       bind:value={currentPassword}/>
+                                            </div>
+                                            <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                                <Label for="newPasswordProfile" class="font-bold text-foreground">Nouveau
+                                                    mot de passe</Label>
+                                                <Input id="newPasswordProfile" type="password"
+                                                       bind:value={newPassword}/>
+                                            </div>
+                                            <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                                <Label for="confirmPasswordProfile" class="font-bold text-foreground">Confirmer
+                                                    le mot de passe</Label>
+                                                <Input id="confirmPasswordProfile" type="password"
+                                                       bind:value={confirmPassword}/>
+                                            </div>
+                                            {#if passwordError}
+                                                <div class="text-destructive font-semibold">{passwordError}</div>
+                                            {/if}
+                                            <div class="flex gap-3 items-center">
+                                                <Button variant="default" onclick={savePassword}
+                                                        disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
+                                                    Enregistrer
+                                                </Button>
+                                                <Button variant="outline"
+                                                        onclick={() => { editingPassword = false; resetPasswordForm(); }}>
+                                                    Annuler
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    {/if}
+                                {:else}
+                                    <!-- Utilisateur connecté via Google OAuth -->
+                                    <div class="flex gap-4 bg-accent rounded-xl p-5 text-accent-foreground items-start">
+                                        <div class="text-2xl">🔒</div>
+                                        <div class="flex flex-col gap-2">
+                                            <h4 class="m-0 text-accent-foreground text-lg font-bold">Authentification
+                                                Google</h4>
+                                            <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La
+                                                gestion du mot de passe se fait directement depuis votre compte
+                                                Google.</p>
+                                            <p class="m-0 text-muted-foreground italic">Vous n'avez pas besoin de
+                                                définir un mot de passe pour ce compte.</p>
+                                        </div>
+                                    </div>
+                                {/if}
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[500px]">
+                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
+                                    <span class="font-bold text-foreground">Double authentification</span>
+                                    <input type="text" value="Désactivée" disabled
+                                           class="border border-border rounded-lg px-3 py-2 bg-muted text-muted-foreground"/>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                {:else if selectedSection === 'preferences'}
+                    <section class="mb-4">
+                        <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Préférences</h3>
+                        <div class="grid gap-4">
+                            <!-- Changement de username -->
+                            <div class="grid gap-3 mb-4">
+                                {#if !editingUsername}
+                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                        <span class="font-bold text-foreground">Nom d'utilisateur</span>
+                                        <div class="flex gap-3 items-center">
+                                            <span class="text-foreground">{data.user.username}</span>
+                                            <Button variant="outline" class="ml-auto" onclick={startEditingUsername}>
+                                                Modifier
+                                            </Button>
+                                        </div>
                                     </div>
                                 {:else}
                                     <div class="grid gap-3">
-                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <Label for="currentPassword" class="font-bold text-foreground">Mot de passe actuel</Label>
-                                            <Input id="currentPassword" type="password" bind:value={currentPassword} />
+                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                            <Label for="newUsername" class="font-bold text-foreground">Nouveau nom
+                                                d'utilisateur</Label>
+                                            <div class="flex flex-col gap-2 w-full">
+                                                <Input
+                                                        id="newUsername"
+                                                        type="text"
+                                                        bind:value={newUsername}
+                                                        aria-invalid={!!usernameError}
+                                                />
+                                                {#if usernameError}
+                                                    <span class="text-destructive text-sm">{usernameError}</span>
+                                                {/if}
+                                            </div>
                                         </div>
-                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <Label for="newPasswordProfile" class="font-bold text-foreground">Nouveau mot de passe</Label>
-                                            <Input id="newPasswordProfile" type="password" bind:value={newPassword} />
-                                        </div>
-                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <Label for="confirmPasswordProfile" class="font-bold text-foreground">Confirmer le mot de passe</Label>
-                                            <Input id="confirmPasswordProfile" type="password" bind:value={confirmPassword} />
-                                        </div>
-                                        {#if passwordError}
-                                            <div class="text-destructive font-semibold">{passwordError}</div>
-                                        {/if}
                                         <div class="flex gap-3 items-center">
-                                            <Button variant="default" onclick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
+                                            <Button
+                                                    variant="default"
+                                                    onclick={saveUsername}
+                                                    disabled={!!usernameError || !newUsername || newUsername === data.user.username}
+                                            >
                                                 Enregistrer
                                             </Button>
-                                            <Button variant="outline" onclick={() => { editingPassword = false; resetPasswordForm(); }}>
+                                            <Button variant="outline" onclick={cancelEditingUsername}>
                                                 Annuler
                                             </Button>
                                         </div>
                                     </div>
                                 {/if}
-                            {:else}
-                                <!-- Utilisateur connecté via Google OAuth -->
-                                <div class="flex gap-4 bg-accent rounded-xl p-5 text-accent-foreground items-start">
-                                    <div class="text-2xl">🔒</div>
-                                    <div class="flex flex-col gap-2">
-                                        <h4 class="m-0 text-accent-foreground text-lg font-bold">Authentification Google</h4>
-                                        <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
-                                        <p class="m-0 text-muted-foreground italic">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[500px]">
-                            <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                <span class="font-bold text-foreground">Double authentification</span>
-                                <input type="text" value="Désactivée" disabled class="border border-border rounded-lg px-3 py-2 bg-muted text-muted-foreground" />
                             </div>
-                        </div>
-                    </div>
-                </section>
-            {:else if selectedSection==='preferences'}
-                <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Préférences</h3>
-                    <div class="grid gap-4">
-                        <!-- Changement de username -->
-                        <div class="grid gap-3 mb-4">
-                            {#if !editingUsername}
-                                <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
-                                    <span class="font-bold text-foreground">Nom d'utilisateur</span>
-                                    <div class="flex gap-3 items-center">
-                                        <span class="text-foreground">{data.user.username}</span>
-                                        <Button variant="outline" class="ml-auto" onclick={startEditingUsername}>
-                                            Modifier
-                                        </Button>
-                                    </div>
-                                </div>
-                            {:else}
-                                <div class="grid gap-3">
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
-                                        <Label for="newUsername" class="font-bold text-foreground">Nouveau nom d'utilisateur</Label>
-                                        <div class="flex flex-col gap-2 w-full">
-                                            <Input
-                                                id="newUsername"
-                                                type="text"
-                                                bind:value={newUsername}
-                                                aria-invalid={!!usernameError}
-                                            />
-                                            {#if usernameError}
-                                                <span class="text-destructive text-sm">{usernameError}</span>
-                                            {/if}
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-3 items-center">
-                                        <Button
-                                            variant="default"
-                                            onclick={saveUsername}
-                                            disabled={!!usernameError || !newUsername || newUsername === data.user.username}
-                                        >
-                                            Enregistrer
-                                        </Button>
-                                        <Button variant="outline" onclick={cancelEditingUsername}>
-                                            Annuler
-                                        </Button>
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
 
-                        <div class="border-t border-border my-2"></div>
-            </div>
-                </section>
-            {:else if selectedSection==='modeles'}
-                <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Mes modèles</h3>
-
-                    {#if isLoadingModels}
-                        <div class="flex items-center justify-center min-h-[300px]">
-                            <div class="text-center">
-                                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                                <p class="mt-4 text-muted-foreground">Chargement de vos modèles...</p>
-                            </div>
+                            <div class="border-t border-border my-2"></div>
                         </div>
-                    {:else if loadModelsError}
-                        <Empty>
-                            <div class="text-6xl mb-4">❌</div>
-                            <h3 class="text-lg font-medium">Erreur de chargement</h3>
-                            <p class="text-muted-foreground">{loadModelsError}</p>
-                        </Empty>
-                    {:else if userModels.length === 0}
-                        <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
-                            <p class="text-muted-foreground font-semibold">Vous n'avez aucun modèle pour le moment</p>
-                            <p class="text-muted-foreground">Ouvrez la galerie des modèles 3D.</p>
-                            <a
-                                class="border rounded-md px-3 py-2 text-primary border-primary hover:bg-primary/10 transition-colors duration-200"
-                                href="/models3D"
-                            >
-                                Voir les modèles
-                            </a>
-                        </div>
-                    {:else}
-                        <ModelFiltersComponent 
-                            {searchQuery}
-                            {selectedCategory}
-                            categories={userModelCategories}
-                            onSearchChange={handleSearchChange}
-                            onCategoryChange={handleCategoryChange}
-                        />
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {#each filteredUserModels as model (model.id)}
-                                <ModelCardComponent 
-                                    {model}
-                                    onClick={() => openModelPopup(model)}
-                                />
+                    </section>
+                {:else}
+                    <section class="mb-4">
+                        <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Abonnement</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {#each [
+                                {
+                                    id: 'free',
+                                    name: 'Free Plan',
+                                    description: 'Accès limité aux fonctionnalités.',
+                                    current: true
+                                },
+                                {
+                                    id: 'pro',
+                                    name: 'Pro',
+                                    description: 'Limites étendues et plus de confort.',
+                                    current: false
+                                },
+                                {
+                                    id: 'ultra',
+                                    name: 'Ultra',
+                                    description: 'Limites très élevées et accès anticipé.',
+                                    current: false
+                                }
+                            ] as plan}
+                                <div class="bg-card border border-border text-card-foreground rounded-xl p-4 grid gap-2">
+                                    <h4 class="text-card-foreground font-bold">{plan.name}</h4>
+                                    <p class="text-muted-foreground">{plan.description}</p>
+                                    <button
+                                            type="button"
+                                            class="bg-primary text-primary-foreground px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            disabled={plan.current}
+                                    >
+                                        {plan.current ? 'Actuel' : `Passer en ${plan.name}`}
+                                    </button>
+                                </div>
                             {/each}
                         </div>
-                        
-                        {#if filteredUserModels.length === 0}
-                            <Empty>
-                                <div class="text-6xl mb-4">🔍</div>
-                                <h3 class="text-lg font-medium">Aucun modèle trouvé</h3>
-                                <p class="text-muted-foreground">Essayez de modifier vos critères de recherche</p>
-                            </Empty>
-                        {/if}
-                    {/if}
-                </section>
-            {:else}
-                <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Abonnement</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {#each [
-                            { id: 'free', name: 'Free Plan', description: 'Accès limité aux fonctionnalités.', current: true },
-                            { id: 'pro', name: 'Pro', description: 'Limites étendues et plus de confort.', current: false },
-                            { id: 'ultra', name: 'Ultra', description: 'Limites très élevées et accès anticipé.', current: false }
-                        ] as plan}
-                            <div class="bg-card border border-border text-card-foreground rounded-xl p-4 grid gap-2">
-                                <h4 class="text-card-foreground font-bold">{plan.name}</h4>
-                                <p class="text-muted-foreground">{plan.description}</p>
-                                <button
-                                    type="button"
-                                    class="bg-primary text-primary-foreground px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    disabled={plan.current}
-                                >
-                                    {plan.current ? 'Actuel' : `Passer en ${plan.name}`}
-                                </button>
-                            </div>
-                        {/each}
-                    </div>
-                </section>
-            {/if}
+                    </section>
+                {/if}
             </div>
         </main>
-        </div>
+    </div>
 </div>
 
-<ChangePasswordModal isOpen={showPwdModal} onclose={() => showPwdModal = false} onsaved={() => { showPwdModal = false; }} />
-
-<Model3DPopupComponent
-    isOpen={currentPopup.isOpen}
-    title={currentPopup.title}
-    category={currentPopup.category}
-    modelPath={currentPopup.modelPath}
-    on:close={closePopup}
-    on:download={downloadModel}
-/>
+<ChangePasswordModal isOpen={showPwdModal} onclose={() => showPwdModal = false}
+                     onsaved={() => { showPwdModal = false; }}/>
