@@ -12,7 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
-		"@lucide/svelte": "^0.554.0",
+		"@internationalized/date": "^3.10.0",
+		"@lucide/svelte": "^0.544.0",
 		"@smui/textfield": "^8.0.0-beta.3",
 		"@smui/top-app-bar": "^8.0.0-beta.3",
 		"@sveltejs/adapter-auto": "^6.0.0",
@@ -45,10 +46,12 @@
 		"@types/three": "^0.177.0",
 		"bcrypt": "^6.0.0",
 		"bcryptjs": "^3.0.2",
+		"bits-ui": "^2.14.4",
 		"emailjs": "^4.0.3",
 		"emailjs-com": "^3.2.0",
 		"jsonwebtoken": "^9.0.2",
 		"minio": "^8.0.6",
+		"mode-watcher": "^1.1.0",
 		"resend": "^6.1.2",
 		"three": "^0.177.0"
 	}

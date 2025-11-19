@@ -1,7 +1,8 @@
 <script lang="ts">
-    import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
+    import { Button } from '$lib/components/ui/button';
+    import { Input } from '$lib/components/ui/input';
+    import { Label } from '$lib/components/ui/label';
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
-    import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
     import { goto, invalidate } from '$app/navigation';
 
     let email = '';
@@ -50,65 +51,72 @@
     }
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-8">
-    <div class="bg-white dark:bg-gray-800 p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
-        <h1 class="text-center mb-10 text-3xl font-bold text-gray-900 dark:text-white">Inscription</h1>
+<div class="min-h-screen flex items-center justify-center bg-muted px-4 py-8">
+    <div class="bg-card p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
+        <h1 class="text-center mb-10 text-3xl font-bold text-card-foreground">Inscription</h1>
         {#if error}
-            <div class="text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-md p-3 mb-4 text-center">{error}</div>
+            <div class="text-destructive bg-destructive/10 rounded-md p-3 mb-4 text-center">{error}</div>
         {/if}
-        
+
         <GoogleButtonComponent onclick={handleGoogleSignup} />
-        
+
         <div class="flex items-center text-center my-6">
-            <div class="flex-1 border-b border-gray-300 dark:border-gray-600"></div>
-            <span class="px-4 text-gray-600 dark:text-gray-400 text-sm">ou</span>
-            <div class="flex-1 border-b border-gray-300 dark:border-gray-600"></div>
+            <div class="flex-1 border-b border-border"></div>
+            <span class="px-4 text-muted-foreground text-sm">ou</span>
+            <div class="flex-1 border-b border-border"></div>
         </div>
 
-        <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-0">
-            <TextFieldComponent
-                variant="outlined"
-                bind:value={username}
-                label="Nom d'utilisateur"
-                type="text"
-                required={true}
-                classe="w-full"
-            />
-            <TextFieldComponent
-                variant="outlined"
-                bind:value={email}
-                label="Email"
-                type="email"
-                required={true}
-                classe="w-full"
-            />
-            <TextFieldComponent
-                variant="outlined"
-                bind:value={password}
-                label="Mot de passe"
-                type="password"
-                required={true}
-                classe="w-full"
-            />
-            <TextFieldComponent
-                variant="outlined"
-                bind:value={confirmPassword}
-                label="Confirmer le mot de passe"
-                type="password"
-                required={true}
-                classe="w-full"
-            />
-            <ButtonComponent
-                color="primary"
-                variant="raised"
-                onClick={handleSubmit}
-                classe="mt-5"
+        <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+                <Label for="username">Nom d'utilisateur</Label>
+                <Input
+                    id="username"
+                    bind:value={username}
+                    type="text"
+                    required={true}
+                    class="w-full"
+                />
+            </div>
+            <div class="flex flex-col gap-2">
+                <Label for="email">Email</Label>
+                <Input
+                    id="email"
+                    bind:value={email}
+                    type="email"
+                    required={true}
+                    class="w-full"
+                />
+            </div>
+            <div class="flex flex-col gap-2">
+                <Label for="password">Mot de passe</Label>
+                <Input
+                    id="password"
+                    bind:value={password}
+                    type="password"
+                    required={true}
+                    class="w-full"
+                />
+            </div>
+            <div class="flex flex-col gap-2">
+                <Label for="confirmPassword">Confirmer le mot de passe</Label>
+                <Input
+                    id="confirmPassword"
+                    bind:value={confirmPassword}
+                    type="password"
+                    required={true}
+                    class="w-full"
+                />
+            </div>
+            <Button
+                variant="default"
+                onclick={handleSubmit}
+                class="mt-5 w-full"
             >
                 S'inscrire
-            </ButtonComponent>
+            </Button>
         </form>
-        <p class="mt-6 text-center text-base text-gray-700 dark:text-gray-300">
-            Déjà un compte ? <a href="/login" class="text-blue-600 dark:text-blue-400 font-medium link-hover">Se connecter</a>
+        <p class="mt-6 text-center text-base text-muted-foreground">
+            Déjà un compte ? <a href="/login" class="text-primary font-medium link-hover">Se connecter</a>
         </p>
     </div>
 </div>

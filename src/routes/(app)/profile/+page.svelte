@@ -1,12 +1,13 @@
 <script lang="ts">
-    import TextFieldComponent from '$lib/components/TextField/TextFieldComponent.svelte';
+    import { Input } from '$lib/components/ui/input';
+    import { Label } from '$lib/components/ui/label';
     import { goto } from '$app/navigation';
     import { onMount, tick } from 'svelte';
-    import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
+    import { Button } from '$lib/components/ui/button';
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
     import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
-    import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
+    import { Empty } from '$lib/components/ui/empty';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
     import { theme, toggleTheme } from '$lib/stores/theme';
 
@@ -20,7 +21,7 @@
         };
     };
 
-    let selectedSection: 'securite' | 'preferences' | 'modeles' | 'abonnement' = 'securite';
+    let selectedSection: string = 'securite';
     let language: 'fr' | 'en' = 'fr';
     let editingPassword = false;
     let showPwdModal = false;
@@ -59,7 +60,7 @@
         rightCardEl.style.height = target + 'px';
     }
 
-    $: selectedSection, syncHeights();
+    $: syncHeights();
 
     async function loadUserModels() {
         isLoadingModels = true;
@@ -213,24 +214,12 @@
         } catch (err) {
             console.error('Erreur lors de la déconnexion', err);
         } finally {
-            goto('/');
+            await goto('/');
         }
     }
 
-    function handleSectionChange(section: 'securite' | 'preferences' | 'modeles' | 'abonnement') {
+    function handleSectionChange(section: string) {
         selectedSection = section;
-    }
-
-    function handleLanguageChange(lang: 'fr' | 'en') {
-        language = lang;
-    }
-
-    function handleThemeChange(newTheme: 'light' | 'dark') {
-        if (newTheme === 'light') {
-            theme.set('light');
-        } else {
-            theme.set('dark');
-        }
     }
 
     function handlePasswordFieldChange(field: string, value: string) {
@@ -328,16 +317,16 @@
     }
 </script>
 
-<div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4 bg-gray-50 dark:bg-gray-900">
+<div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4 bg-muted">
     <div class="w-full max-w-6xl mx-auto grid gap-5 grid-cols-[340px_1fr] items-stretch">
         <aside>
-            <div class="bg-white dark:bg-gray-800 backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full" bind:this={leftCardEl}>
-                <div class="w-24 h-24 rounded-full grid place-items-center bg-gray-700 text-white text-2xl font-bold">
+            <div class="bg-card backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full" bind:this={leftCardEl}>
+                <div class="w-24 h-24 rounded-full grid place-items-center bg-primary text-primary-foreground text-4xl font-bold">
                     {data.user.email.charAt(0).toUpperCase()}
                 </div>
-                <div class="font-extrabold text-gray-900 dark:text-white text-lg">{data.user.username}</div>
-                <div class="text-gray-500 dark:text-gray-400 text-base">{data.user.email || 'Connecté via Google'}</div>
-                <div class="mt-1 px-3 py-2 rounded-full text-sm" style="background-color: {$theme === 'dark' ? '#064e3b' : '#d1fae5'}; color: {$theme === 'dark' ? '#6ee7b7' : '#065f46'};">
+                <div class="font-extrabold text-card-foreground text-lg">{data.user.username}</div>
+                <div class="text-muted-foreground text-base">{data.user.email || 'Connecté via Google'}</div>
+                <div class="mt-1 px-3 py-2 rounded-full text-sm bg-secondary text-secondary-foreground">
                     Membre depuis {new Date(data.user.createdAt).toLocaleDateString('fr-FR')}
                 </div>
 
@@ -345,17 +334,20 @@
                     {#each [
                         { id: 'securite', label: 'Sécurité du compte' },
                         { id: 'preferences', label: 'Préférences' },
-                        { id: 'modeles', label: 'Mes modèles' },
+                        { id: 'appareils', label: 'Mes appareils' },
                         { id: 'abonnement', label: 'Abonnement' }
                     ] as section}
                         <li>
-                            <button 
-                                type="button" 
-                                role="tab" 
+                            <button
+                                type="button"
+                                role="tab"
                                 class="w-full text-left rounded-xl px-4 py-3 font-semibold transition-colors duration-200"
-                                style="background-color: {selectedSection === section.id ? ($theme === 'dark' ? '#1e3a8a' : '#eef2ff') : ($theme === 'dark' ? '#374151' : '#f8fafc')}; color: {selectedSection === section.id ? ($theme === 'dark' ? '#dbeafe' : '#1e3a8a') : ($theme === 'dark' ? '#ffffff' : '#1f2937')};"
-                                aria-selected={selectedSection === section.id} 
-                                onclick={() => handleSectionChange(section.id as 'securite' | 'preferences' | 'modeles' | 'abonnement')}
+                                class:bg-accent={selectedSection === section.id}
+                                class:text-accent-foreground={selectedSection === section.id}
+                                class:bg-secondary={selectedSection !== section.id}
+                                class:text-secondary-foreground={selectedSection !== section.id}
+                                aria-selected={selectedSection === section.id}
+                                onclick={() => handleSectionChange(section.id)}
                             >
                                 {section.label}
                             </button>
@@ -364,186 +356,149 @@
                 </ul>
                 
                 <div class="mt-5 flex justify-center">
-                    <ButtonComponent color="primary" variant="raised" href="" onClick={handleLogout}>
+                    <Button variant="default" onclick={handleLogout}>
                         Se déconnecter
-                    </ButtonComponent>
+                    </Button>
                 </div>
             </div>
         </aside>
 
         <main>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
+            <div class="bg-card rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
             {#if selectedSection==='securite'}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Sécurité du compte</h3>
+                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Sécurité du compte</h3>
                     <div class="flex flex-col items-center gap-5">
                         <div class="grid gap-3 w-full max-w-[500px]">
                             {#if data.user.hasPassword}
                                 {#if !editingPassword}
                                     <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                        <span class="font-bold text-gray-700">Mot de passe</span>
-                                        <ButtonComponent color="primary" variant="raised" classe="w-64" href="" onClick={() => { showPwdModal = true; }}>
+                                        <span class="font-bold text-foreground">Mot de passe</span>
+                                        <Button variant="default" class="w-64" onclick={() => { showPwdModal = true; }}>
                                             Changer le mot de passe
-                                        </ButtonComponent>
+                                        </Button>
                                     </div>
                                 {:else}
                                     <div class="grid gap-3">
                                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <span class="font-bold text-gray-700">Mot de passe actuel</span>
-                                            <TextFieldComponent label="" classe="nolabel" type="password" bind:value={currentPassword} />
+                                            <Label for="currentPassword" class="font-bold text-foreground">Mot de passe actuel</Label>
+                                            <Input id="currentPassword" type="password" bind:value={currentPassword} />
                                         </div>
                                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <span class="font-bold text-gray-700">Nouveau mot de passe</span>
-                                            <TextFieldComponent label="" classe="nolabel" type="password" bind:value={newPassword} />
+                                            <Label for="newPasswordProfile" class="font-bold text-foreground">Nouveau mot de passe</Label>
+                                            <Input id="newPasswordProfile" type="password" bind:value={newPassword} />
                                         </div>
                                         <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                            <span class="font-bold text-gray-700">Confirmer le mot de passe</span>
-                                            <TextFieldComponent label="" classe="nolabel" type="password" bind:value={confirmPassword} />
+                                            <Label for="confirmPasswordProfile" class="font-bold text-foreground">Confirmer le mot de passe</Label>
+                                            <Input id="confirmPasswordProfile" type="password" bind:value={confirmPassword} />
                                         </div>
                                         {#if passwordError}
-                                            <div class="text-red-600 font-semibold">{passwordError}</div>
+                                            <div class="text-destructive font-semibold">{passwordError}</div>
                                         {/if}
                                         <div class="flex gap-3 items-center">
-                                            <ButtonComponent color="primary" variant="raised" href="" onClick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
+                                            <Button variant="default" onclick={savePassword} disabled={!!passwordError || !currentPassword || !newPassword || !confirmPassword}>
                                                 Enregistrer
-                                            </ButtonComponent>
-                                            <ButtonComponent color="secondary" variant="outlined" href="" onClick={() => { editingPassword = false; resetPasswordForm(); }}>
+                                            </Button>
+                                            <Button variant="outline" onclick={() => { editingPassword = false; resetPasswordForm(); }}>
                                                 Annuler
-                                            </ButtonComponent>
+                                            </Button>
                                         </div>
                                     </div>
                                 {/if}
                             {:else}
                                 <!-- Utilisateur connecté via Google OAuth -->
-                                <div class="flex gap-4 bg-gradient-to-r from-indigo-400 to-purple-600 rounded-xl p-5 text-white items-start">
+                                <div class="flex gap-4 bg-accent rounded-xl p-5 text-accent-foreground items-start">
                                     <div class="text-2xl">🔒</div>
                                     <div class="flex flex-col gap-2">
-                                        <h4 class="m-0 text-white text-lg font-bold">Authentification Google</h4>
+                                        <h4 class="m-0 text-accent-foreground text-lg font-bold">Authentification Google</h4>
                                         <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
-                                        <p class="m-0 text-white/85 italic">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
+                                        <p class="m-0 text-muted-foreground italic">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
                                     </div>
                                 </div>
                             {/if}
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-[500px]">
                             <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                                <span class="font-bold text-gray-700 dark:text-gray-300">Double authentification</span>
-                                <input type="text" value="Désactivée" disabled class="border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400" />
+                                <span class="font-bold text-foreground">Double authentification</span>
+                                <input type="text" value="Désactivée" disabled class="border border-border rounded-lg px-3 py-2 bg-muted text-muted-foreground" />
                             </div>
                         </div>
                     </div>
                 </section>
             {:else if selectedSection==='preferences'}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Préférences</h3>
+                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Préférences</h3>
                     <div class="grid gap-4">
                         <!-- Changement de username -->
                         <div class="grid gap-3 mb-4">
                             {#if !editingUsername}
                                 <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
-                                    <span class="font-bold text-gray-700">Nom d'utilisateur</span>
+                                    <span class="font-bold text-foreground">Nom d'utilisateur</span>
                                     <div class="flex gap-3 items-center">
-                                        <span class="text-gray-600">{data.user.username}</span>
-                                        <ButtonComponent color="primary" variant="outlined" classe="ml-auto" onClick={startEditingUsername}>
+                                        <span class="text-foreground">{data.user.username}</span>
+                                        <Button variant="outline" class="ml-auto" onclick={startEditingUsername}>
                                             Modifier
-                                        </ButtonComponent>
+                                        </Button>
                                     </div>
                                 </div>
                             {:else}
                                 <div class="grid gap-3">
                                     <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
-                                        <span class="font-bold text-gray-700">Nouveau nom d'utilisateur</span>
-                                        <TextFieldComponent 
-                                            label="" 
-                                            classe="nolabel" 
-                                            type="text" 
-                                            bind:value={newUsername}
-                                            error={usernameError}
-                                        />
+                                        <Label for="newUsername" class="font-bold text-foreground">Nouveau nom d'utilisateur</Label>
+                                        <div class="flex flex-col gap-2 w-full">
+                                            <Input
+                                                id="newUsername"
+                                                type="text"
+                                                bind:value={newUsername}
+                                                aria-invalid={!!usernameError}
+                                            />
+                                            {#if usernameError}
+                                                <span class="text-destructive text-sm">{usernameError}</span>
+                                            {/if}
+                                        </div>
                                     </div>
                                     <div class="flex gap-3 items-center">
-                                        <ButtonComponent 
-                                            color="primary" 
-                                            variant="raised" 
-                                            onClick={saveUsername}
+                                        <Button
+                                            variant="default"
+                                            onclick={saveUsername}
                                             disabled={!!usernameError || !newUsername || newUsername === data.user.username}
                                         >
                                             Enregistrer
-                                        </ButtonComponent>
-                                        <ButtonComponent color="secondary" variant="outlined" onClick={cancelEditingUsername}>
+                                        </Button>
+                                        <Button variant="outline" onclick={cancelEditingUsername}>
                                             Annuler
-                                        </ButtonComponent>
+                                        </Button>
                                     </div>
                                 </div>
                             {/if}
                         </div>
-                        
-                        <div class="border-t border-gray-200 my-2"></div>
-                        
-                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                            <span class="font-bold text-gray-700 dark:text-gray-300">Langue</span>
-                            <select 
-                                id="lang-select" 
-                                value={language}
-                                onchange={(e) => handleLanguageChange((e.target as HTMLSelectElement).value as 'fr' | 'en')}
-                                class="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200"
-                            >
-                                <option value="fr">Français</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
-                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-2">
-                            <span class="font-bold text-gray-700 dark:text-gray-300">Thème</span>
-                            <div class="inline-flex gap-2 bg-gray-100 dark:bg-gray-700 p-1.5 rounded-lg" role="tablist" aria-label="Theme">
-                                <button 
-                                    type="button" 
-                                    role="tab" 
-                                    class="px-3 py-2 rounded-md font-semibold text-gray-800 dark:text-white transition-colors duration-200"
-                                    class:bg-white={$theme === 'light'}
-                                    class:dark:bg-gray-600={$theme === 'light'}
-                                    onclick={() => handleThemeChange('light')} 
-                                    aria-selected={$theme === 'light'}
-                                >
-                                    <span class="mr-1">☀️</span> Clair
-                                </button>
-                                <button 
-                                    type="button" 
-                                    role="tab" 
-                                    class="px-3 py-2 rounded-md font-semibold text-gray-800 dark:text-white transition-colors duration-200"
-                                    class:bg-white={$theme === 'dark'}
-                                    class:dark:bg-gray-600={$theme === 'dark'}
-                                    onclick={() => handleThemeChange('dark')} 
-                                    aria-selected={$theme === 'dark'}
-                                >
-                                    <span class="mr-1">🌙</span> Sombre
-                                </button>
-                            </div>
-                        </div>
+
+                        <div class="border-t border-border my-2"></div>
             </div>
                 </section>
             {:else if selectedSection==='modeles'}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Mes modèles</h3>
-                    
+                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Mes modèles</h3>
+
                     {#if isLoadingModels}
                         <div class="flex items-center justify-center min-h-[300px]">
                             <div class="text-center">
-                                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                                <p class="mt-4 text-gray-600">Chargement de vos modèles...</p>
+                                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                                <p class="mt-4 text-muted-foreground">Chargement de vos modèles...</p>
                             </div>
                         </div>
                     {:else if loadModelsError}
-                        <EmptyStateComponent 
-                            icon="❌"
-                            title="Erreur de chargement"
-                            description={loadModelsError}
-                        />
+                        <Empty>
+                            <div class="text-6xl mb-4">❌</div>
+                            <h3 class="text-lg font-medium">Erreur de chargement</h3>
+                            <p class="text-muted-foreground">{loadModelsError}</p>
+                        </Empty>
                     {:else if userModels.length === 0}
                         <div class="flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
-                            <p class="text-gray-500 font-semibold">Vous n'avez aucun modèle pour le moment</p>
-                            <p class="text-gray-400">Ouvrez la galerie des modèles 3D.</p>
-                            <a 
-                                class="border rounded-md px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-50 transition-colors duration-200" 
+                            <p class="text-muted-foreground font-semibold">Vous n'avez aucun modèle pour le moment</p>
+                            <p class="text-muted-foreground">Ouvrez la galerie des modèles 3D.</p>
+                            <a
+                                class="border rounded-md px-3 py-2 text-primary border-primary hover:bg-primary/10 transition-colors duration-200"
                                 href="/models3D"
                             >
                                 Voir les modèles
@@ -568,29 +523,29 @@
                         </div>
                         
                         {#if filteredUserModels.length === 0}
-                            <EmptyStateComponent 
-                                icon="🔍"
-                                title="Aucun modèle trouvé"
-                                description="Essayez de modifier vos critères de recherche"
-                            />
+                            <Empty>
+                                <div class="text-6xl mb-4">🔍</div>
+                                <h3 class="text-lg font-medium">Aucun modèle trouvé</h3>
+                                <p class="text-muted-foreground">Essayez de modifier vos critères de recherche</p>
+                            </Empty>
                         {/if}
                     {/if}
                 </section>
             {:else}
                 <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-gray-900 dark:text-white text-center text-2xl">Abonnement</h3>
+                    <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Abonnement</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {#each [
                             { id: 'free', name: 'Free Plan', description: 'Accès limité aux fonctionnalités.', current: true },
                             { id: 'pro', name: 'Pro', description: 'Limites étendues et plus de confort.', current: false },
                             { id: 'ultra', name: 'Ultra', description: 'Limites très élevées et accès anticipé.', current: false }
                         ] as plan}
-                            <div class="bg-gray-900 dark:bg-gray-700 text-gray-200 dark:text-gray-100 rounded-xl p-4 grid gap-2">
-                                <h4 class="text-white dark:text-white">{plan.name}</h4>
-                                <p class="text-gray-400 dark:text-gray-300">{plan.description}</p>
-                                <button 
-                                    type="button" 
-                                    class="bg-blue-400 dark:bg-blue-500 text-gray-900 dark:text-white px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" 
+                            <div class="bg-card border border-border text-card-foreground rounded-xl p-4 grid gap-2">
+                                <h4 class="text-card-foreground font-bold">{plan.name}</h4>
+                                <p class="text-muted-foreground">{plan.description}</p>
+                                <button
+                                    type="button"
+                                    class="bg-primary text-primary-foreground px-3 py-2 rounded-md font-semibold transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={plan.current}
                                 >
                                     {plan.current ? 'Actuel' : `Passer en ${plan.name}`}

@@ -152,14 +152,14 @@
     }
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-muted">
 
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {#if isLoading}
             <div class="flex items-center justify-center min-h-[400px]">
                 <div class="text-center">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    <p class="mt-4 text-gray-600">Chargement des modèles...</p>
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <p class="mt-4 text-muted-foreground">Chargement des modèles...</p>
                 </div>
             </div>
         {:else if loadError}
