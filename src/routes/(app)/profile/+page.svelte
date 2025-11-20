@@ -40,14 +40,14 @@
 
     let userModels = $state<any[]>([]);
     let searchQuery = $state('');
-    let selectedCategory = $state('');
+    let selectedCategories = $state<string[]>([]);
     let isLoadingModels = $state(false);
     let loadModelsError = $state('');
     
     // Optimisé : memoization pour éviter les recalculs inutiles
     let userModelCategories = $state<string[]>([]);
     
-    let filteredUserModels = $derived(filterAndSortUserModels(userModels, searchQuery, selectedCategory));
+    let filteredUserModels = $derived(filterAndSortUserModels(userModels, searchQuery, selectedCategories));
     
     // Mettre à jour les catégories seulement quand userModels change
     $effect(() => {
@@ -130,18 +130,31 @@
         return normalized;
     }
 
-    function filterAndSortUserModels(list: typeof userModels, search: string, categoryFilter: string) {
+    function filterAndSortUserModels(list: typeof userModels, search: string, categoryFilters: string[]) {
         // Si pas de filtre, retourner la liste directement
-        if (!search.trim() && !categoryFilter) {
+        if (!search.trim() && categoryFilters.length === 0) {
             return list;
         }
 
         const q = normalize(search.trim());
 
         let filtered = list.filter(model => {
-            // Optimisation : vérifier d'abord la catégorie (plus rapide)
-            if (categoryFilter && model.category !== categoryFilter) {
-                return false;
+            // Optimisation : vérifier d'abord les catégories (plus rapide)
+            if (categoryFilters.length > 0) {
+                const matchesCategory = categoryFilters.some(filter => {
+                    if (filter === 'public') {
+                        return model.isPublic === true;
+                    } else if (filter === 'privé') {
+                        return model.isPublic === false;
+                    } else if (filter === 'likés') {
+                        return model.isLiked === true;
+                    }
+                    // Fallback: check if it matches the model's category field
+                    return normalize(model.category) === normalize(filter);
+                });
+                if (!matchesCategory) {
+                    return false;
+                }
             }
 
             // Ensuite vérifier la recherche seulement si nécessaire
@@ -164,8 +177,8 @@
         searchQuery = value;
     }
 
-    function handleCategoryChange(value: string) {
-        selectedCategory = value;
+    function handleCategoryChange(value: string[]) {
+        selectedCategories = value;
     }
 
     function openModelPopup(model: any) {
@@ -692,8 +705,9 @@
                     {:else}
                         <ModelFiltersComponent 
                             {searchQuery}
-                            {selectedCategory}
+                            selectedCategories={selectedCategories}
                             categories={userModelCategories}
+                            isAuthenticated={true}
                             onSearchChange={handleSearchChange}
                             onCategoryChange={handleCategoryChange}
                         />

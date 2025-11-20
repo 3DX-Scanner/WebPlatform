@@ -14,7 +14,7 @@
     let { data } = $props();
     let isAuthenticated = data?.isAuthenticated ?? false;
     let searchQuery = $state('');
-    let selectedCategory = $state('');
+    let selectedCategories = $state<string[]>([]);
     let sortBy = $state('');
     let pageKey = $state(0);
     let isLoading = $state(true);
@@ -53,7 +53,6 @@
             models = data.models || [];
             isLoading = false;
         } catch (error) {
-            console.error('Erreur lors du chargement des modèles:', error);
             loadError = 'Impossible de charger les modèles. Veuillez réessayer plus tard.';
             isLoading = false;
             return;
@@ -69,7 +68,7 @@
         };
 
         searchQuery = '';
-        selectedCategory = '';
+        selectedCategories = [];
         sortBy = '';
         pageKey++;
     }
@@ -82,7 +81,7 @@
         resetPageState();
     });
 
-    function filterAndSortModels(list: typeof models, search: string, categoryFilter: string, sort: string) {
+    function filterAndSortModels(list: typeof models, search: string, categoryFilters: string[], sort: string) {
         const normalize = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
         const q = normalize(search.trim());
 
@@ -94,12 +93,18 @@
 
             const matchesSearch = q === '' || title.includes(q) || subtitle.includes(q) || content.includes(q) || category.includes(q);
             
-            // Filtrer par public/privé
             let matchesCategory = true;
-            if (categoryFilter === 'public') {
-                matchesCategory = model.isPublic === true;
-            } else if (categoryFilter === 'privé') {
-                matchesCategory = model.isPublic === false;
+            if (categoryFilters.length > 0) {
+                matchesCategory = categoryFilters.some(filter => {
+                    if (filter === 'public') {
+                        return model.isPublic === true;
+                    } else if (filter === 'privé') {
+                        return model.isPublic === false;
+                    } else if (filter === 'likés') {
+                        return model.isLiked === true;
+                    }
+                    return false;
+                });
             }
             
             return matchesSearch && matchesCategory;
@@ -116,14 +121,26 @@
         return filtered;
     }
 
-    let filteredModels = $derived(filterAndSortModels(models, searchQuery, selectedCategory, sortBy));
+    let filteredModels = $derived(filterAndSortModels(models, searchQuery, selectedCategories, sortBy));
 
     function handleSearchChange(value: string) {
         searchQuery = value;
     }
 
-    function handleCategoryChange(value: string) {
-        selectedCategory = value;
+    function handleCategoryChange(value: string[]) {
+        selectedCategories = value;
+    }
+
+    function handleModelLike(modelId: string | number, liked: boolean, likeCount: number) {
+        const modelIndex = models.findIndex(m => m.id === modelId);
+        if (modelIndex !== -1) {
+            const model = models[modelIndex];
+            if (model.isLiked !== liked || model.likes !== likeCount) {
+                model.isLiked = liked;
+                model.likes = likeCount;
+                models = models;
+            }
+        }
     }
 
     function openModelPopup(model: any) {
@@ -159,7 +176,6 @@
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Erreur lors du téléchargement:', error);
             alert('Erreur lors du téléchargement du modèle. Vérifiez que le fichier existe.');
             return;
         }
@@ -244,7 +260,6 @@
 
             loadModels();
         } catch (error: any) {
-            console.error('Erreur lors de la suppression:', error);
             alert(error.message || 'Erreur lors de la suppression du modèle. Veuillez réessayer.');
         }
     }
@@ -288,7 +303,8 @@
         {:else}
             <ModelFiltersComponent 
                 {searchQuery}
-                {selectedCategory}
+                selectedCategories={selectedCategories}
+                {isAuthenticated}
                 onSearchChange={handleSearchChange}
                 onCategoryChange={handleCategoryChange}
                 onOpenImport={handleOpenImport}
@@ -304,7 +320,7 @@
                         {isAuthenticated}
                         onEdit={() => handleEditModel(model)}
                         onDelete={() => handleDeleteModel(model)}
-                        onLike={() => {}}
+                        onLike={handleModelLike}
                     />
                 {/each}
             </div>

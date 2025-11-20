@@ -30,7 +30,7 @@
         onClick?: () => void;
         onEdit?: () => void;
         onDelete?: () => void;
-        onLike?: () => void;
+        onLike?: (modelId: string | number, liked: boolean, likeCount: number) => void;
         isSelected?: boolean;
         showMenu?: boolean;
         isAuthenticated?: boolean;
@@ -115,7 +115,8 @@
             // Mettre à jour avec les vraies valeurs
             isLiked = data.liked;
             likesCount = data.likeCount;
-            onLike();
+            // Notifier le parent avec les nouvelles valeurs
+            onLike(model.id, data.liked, data.likeCount);
         } catch (error: any) {
             console.error('Erreur lors du like:', error);
             // Revert optimistic update

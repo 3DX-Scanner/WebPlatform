@@ -39,15 +39,15 @@
             });
 
             if (res.ok) {
-                isAuthenticated = true;
                 await invalidate('auth:session');
                 await goto('/profile', { invalidateAll: true });
             } else {
                 const data = await res.json();
-                error = data.message || 'Erreur lors de la connexion';
+                error = data.error || data.message || 'Erreur lors de la connexion';
             }
         } catch (e) {
-            error = 'Erreur réseau';
+            console.error('Erreur réseau:', e);
+            error = 'Erreur réseau. Vérifiez votre connexion et que le serveur est démarré.';
         }
     }
 

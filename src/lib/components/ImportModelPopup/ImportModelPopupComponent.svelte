@@ -222,7 +222,7 @@
                 {#if uploadSuccess}
                     <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                         <p class="text-sm text-green-600 dark:text-green-400">
-                            ✅ Modèle importé avec succès !
+                            Modèle importé avec succès !
                         </p>
                     </div>
                 {/if}
