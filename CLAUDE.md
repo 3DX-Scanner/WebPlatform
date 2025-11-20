@@ -156,7 +156,7 @@ Components are organized by feature in `src/lib/components/`:
 
 ### State Management
 
-- **Theme**: use shadcn-svelte with text file shadcn-doc.txt as documentation and tailwindcss where needed
+- **Theme**: use shadcn-svelte with text file shadcn-doc.txt as documentation, use colors from app.css
 - **User session**: Server-side via `event.locals.user` (populated by hooks)
 
 ### Environment Variables

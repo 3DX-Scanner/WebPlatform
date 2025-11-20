@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+/*import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
 function getInitialTheme() {
@@ -34,4 +34,4 @@ export function applyTheme(themeValue: 'light' | 'dark') {
             document.documentElement.classList.remove('dark');
         }
     }
-}
+}*/

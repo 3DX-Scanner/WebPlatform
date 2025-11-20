@@ -5,46 +5,41 @@
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
     import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
+    import {EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle, Root} from "$lib/components/ui/empty";
+    import {Button} from "$lib/components/ui/button";
 
-    let isAuthenticated = false;
-    let searchQuery = '';
-    let selectedCategory = '';
-    let sortBy = '';
-    let pageKey = 0;
-    let isLoading = true;
-    let loadError = '';
+    let searchQuery = $state('');
+    let selectedCategory = $state('');
+    let sortBy = $state('');
+    let pageKey = $state(0);
+    let isLoading = $state(true);
+    let loadError = $state('');
 
-    let currentPopup = {
+    let currentPopup = $state({
         isOpen: false,
         title: '',
         category: '',
         modelPath: ''
-    };
+    });
 
     let models: any[] = [];
-    let filteredModels: any[] = [];
-    let categories: string[] = [];
 
     async function loadModels() {
         isLoading = true;
         loadError = '';
-        
-        try {
-            const response = await fetch('/api/models');
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || 'Erreur lors du chargement des modèles');
-            }
-            
-            models = data.models || [];
-            filteredModels = [...models];
-            isLoading = false;
-        } catch (error) {
-            console.error('Erreur lors du chargement des modèles:', error);
+
+        const response = await fetch('/api/models');
+        const data = await response.json();
+
+        if (!response.ok) {
             loadError = 'Impossible de charger les modèles. Veuillez réessayer plus tard.';
             isLoading = false;
+            return;
         }
+
+        models = data.models || [];
+        filteredModels = [...models];
+        isLoading = false;
     }
 
     function resetPageState() {
@@ -54,12 +49,15 @@
             category: '',
             modelPath: ''
         };
+
         searchQuery = '';
         selectedCategory = '';
         sortBy = '';
+
         if (models.length > 0) {
             filteredModels = [...models];
         }
+
         pageKey++;
     }
 
@@ -97,8 +95,8 @@
         return filtered;
     }
 
-    $: filteredModels = filterAndSortModels(models, searchQuery, selectedCategory, sortBy);
-    $: categories = Array.from(new Set(models.map((m) => m.category))).sort();
+    let filteredModels = $derived(filterAndSortModels(models, searchQuery, selectedCategory, sortBy));
+    let categories = $derived(Array.from(new Set(models.map((m) => m.category))).sort());
 
     function handleSearchChange(value: string) {
         searchQuery = value;
@@ -106,11 +104,6 @@
 
     function handleCategoryChange(value: string) {
         selectedCategory = value;
-    }
-
-    function handleSortChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-        sortBy = target.value;
     }
 
     function openModelPopup(model: any) {
@@ -128,27 +121,24 @@
 
     async function downloadModel(event: CustomEvent) {
         const { modelPath, title } = event.detail;
-        try {
-            const response = await fetch(modelPath);
-            if (!response.ok) {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-            
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${title}.glb`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            
-            console.log(`Téléchargement de ${title} réussi`);
-        } catch (error) {
-            console.error('Erreur lors du téléchargement:', error);
+
+        const response = await fetch(modelPath);
+
+        if (!response.ok) {
             alert('Erreur lors du téléchargement du modèle. Vérifiez que le fichier existe.');
+            return;
         }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title}.glb`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
     }
 </script>
 
@@ -163,11 +153,19 @@
                 </div>
             </div>
         {:else if loadError}
-            <EmptyStateComponent 
-                icon="❌"
-                title="Erreur de chargement"
-                description={loadError}
-            />
+            <Root>
+                <EmptyHeader>
+                    <EmptyTitle>Erreur de chargement</EmptyTitle>
+                    <EmptyDescription>
+                        Le page n'a pas pu être chargée. Veuillez réessayer.
+                    </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                    <Button onclick={() => { window.location.reload(); } }>
+                        Réessayer
+                    </Button>
+                </EmptyContent>
+            </Root>
         {:else}
             <ModelFiltersComponent 
                 {searchQuery}

@@ -5,13 +5,15 @@
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
     import { goto, invalidate } from '$app/navigation';
 
-    let email = '';
-    let password = '';
-    let confirmPassword = '';
-    let username = '';
-    let error = '';
+    let email = $state('');
+    let password = $state('');
+    let confirmPassword = $state('');
+    let username = $state('');
+    let error = $state('');
     
-    async function handleSubmit() {
+    async function handleSubmit(e: Event) {
+        e.preventDefault();
+
         if (password !== confirmPassword) {
             error = 'Les mots de passe ne correspondent pas';
             return;
@@ -40,8 +42,6 @@
         }
     }
 
-
-
     async function handleGoogleSignup() {
         try {
             window.location.href = '/api/auth/google';
@@ -66,7 +66,7 @@
             <div class="flex-1 border-b border-border"></div>
         </div>
 
-        <form on:submit|preventDefault={handleSubmit} class="flex flex-col gap-4">
+        <form onsubmit="{handleSubmit}" class="flex flex-col gap-4">
             <div class="flex flex-col gap-2">
                 <Label for="username">Nom d'utilisateur</Label>
                 <Input

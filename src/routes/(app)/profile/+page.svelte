@@ -5,10 +5,8 @@
     import {onMount, tick} from 'svelte';
     import {Button} from '$lib/components/ui/button';
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
-    import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
-    import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
-    import {Empty} from '$lib/components/ui/empty';
-    import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
+    import {EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Root} from "$lib/components/ui/empty";
+    import {Link, ArrowUpRight} from "@lucide/svelte";
 
     export let data: {
         user: {
@@ -20,7 +18,7 @@
         };
     };
 
-    let selectedSection: string = 'securite';
+    let selectedSection: string = 'devices';
     let editingPassword = false;
     let showPwdModal = false;
     let currentPassword = '';
@@ -34,13 +32,6 @@
     let leftCardEl: HTMLDivElement;
     let rightCardEl: HTMLDivElement;
 
-    let currentPopup = {
-        isOpen: false,
-        title: '',
-        category: '',
-        modelPath: ''
-    };
-
     async function syncHeights() {
         if (!leftCardEl || !rightCardEl) return;
         await tick();
@@ -50,44 +41,6 @@
     }
 
     $: syncHeights();
-
-    function openModelPopup(model: any) {
-        currentPopup = {
-            isOpen: true,
-            title: model.title,
-            category: model.category,
-            modelPath: model.modelPath
-        };
-    }
-
-    function closePopup() {
-        currentPopup.isOpen = false;
-    }
-
-    async function downloadModel(event: CustomEvent) {
-        const {modelPath, title} = event.detail;
-        try {
-            const response = await fetch(modelPath);
-            if (!response.ok) {
-                throw new Error(`Erreur HTTP: ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${title}.glb`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-
-            console.log(`Téléchargement de ${title} réussi`);
-        } catch (error) {
-            console.error('Erreur lors du téléchargement:', error);
-            alert('Erreur lors du téléchargement du modèle.');
-        }
-    }
 
     onMount(() => {
         syncHeights();
@@ -123,7 +76,6 @@
                 body: JSON.stringify({currentPassword, newPassword, confirmPassword}),
                 credentials: 'include'
             });
-
 
             const data = await res.json();
 
@@ -188,11 +140,9 @@
         }
 
         const usernameRegex = /^[a-zA-Z0-9_-]+$/;
-        if (!usernameRegex.test(newUsername)) {
-            return false;
-        }
+        return usernameRegex.test(newUsername);
 
-        return true;
+
     }
 
     // Réinitialiser l'erreur quand l'utilisateur modifie le champ
@@ -257,7 +207,7 @@
 <div class="min-h-[calc(100vh-64px)] flex items-center justify-center py-8 px-4 bg-muted">
     <div class="w-full max-w-6xl mx-auto grid gap-5 grid-cols-[340px_1fr] items-stretch">
         <aside>
-            <div class="bg-card backdrop-blur-md rounded-2xl shadow-2xl p-7 grid place-items-center gap-2 h-full"
+            <div class="bg-card backdrop-blur-md rounded-2xl shadow-lg p-7 grid place-items-center gap-2 h-full"
                  bind:this={leftCardEl}>
                 <div class="w-24 h-24 rounded-full grid place-items-center bg-primary text-primary-foreground text-4xl font-bold">
                     {data.user.email.charAt(0).toUpperCase()}
@@ -302,10 +252,31 @@
         </aside>
 
         <main>
-            <div class="bg-card rounded-2xl shadow-2xl p-7 overflow-auto h-full" bind:this={rightCardEl}>
+            <div class="bg-card rounded-2xl shadow-lg p-7 overflow-auto h-full" bind:this={rightCardEl}>
                 {#if selectedSection === 'devices'}
                     <section class="mb-4">
-                        <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Appareils</h3>
+                        <Root>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Link />
+                                </EmptyMedia>
+                                <EmptyTitle>Aucun appareil</EmptyTitle>
+                                <EmptyDescription>
+                                    Aucun appareil n'est associé à votre compte pour le moment.
+                                    <br>Commencez par associer un appareil.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                            <EmptyContent>
+                                <div class="flex gap-2">
+                                    <Button>Associer un appareil</Button>
+                                </div>
+                            </EmptyContent>
+                            <Button variant="link" class="text-muted-foreground" size="sm">
+                                <a href="#/">
+                                    Documentation <ArrowUpRight class="inline" />
+                                </a>
+                            </Button>
+                        </Root>
                     </section>
                 {:else if selectedSection === 'security'}
                     <section class="mb-4">
@@ -359,15 +330,9 @@
                                 {:else}
                                     <!-- Utilisateur connecté via Google OAuth -->
                                     <div class="flex gap-4 bg-accent rounded-xl p-5 text-accent-foreground items-start">
-                                        <div class="text-2xl">🔒</div>
                                         <div class="flex flex-col gap-2">
-                                            <h4 class="m-0 text-accent-foreground text-lg font-bold">Authentification
-                                                Google</h4>
-                                            <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La
-                                                gestion du mot de passe se fait directement depuis votre compte
-                                                Google.</p>
-                                            <p class="m-0 text-muted-foreground italic">Vous n'avez pas besoin de
-                                                définir un mot de passe pour ce compte.</p>
+                                            <h4 class="m-0 text-accent-foreground text-lg font-bold">Authentification Google</h4>
+                                            <p class="m-0 leading-relaxed">Votre compte est connecté via Google.</p>
                                         </div>
                                     </div>
                                 {/if}

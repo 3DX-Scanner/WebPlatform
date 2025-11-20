@@ -9,7 +9,6 @@
     let email = '';
     let password = '';
     let error = '';
-    let isAuthenticated = false;
 
     onMount(() => {
         const params = new URLSearchParams(window.location.search);

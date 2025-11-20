@@ -1,23 +1,13 @@
 <script lang="ts">
     import {onMount} from 'svelte';
     import {afterNavigate} from '$app/navigation';
-    import {applyTheme, theme, toggleTheme} from '$lib/stores/theme';
-    import SunIcon from "@lucide/svelte/icons/sun";
-    import MoonIcon from "@lucide/svelte/icons/moon";
     import {Button} from "$lib/components/ui/button";
     import {toggleMode} from "mode-watcher";
+    import { SunIcon, MoonIcon } from '@lucide/svelte';
 
     let { isAuthenticated = false } = $props();
     let resolvedAuth = $state(isAuthenticated);
     let isMenuOpen = $state(false);
-    let currentTheme = $state('light');
-    
-    $effect(() => {
-        return theme.subscribe(value => {
-            currentTheme = value;
-            applyTheme(value);
-        });
-    });
     
     async function refreshAuth() {
         try {
@@ -41,11 +31,6 @@
     function toggleMenu() {
         isMenuOpen = !isMenuOpen;
     }
-    
-    function handleThemeToggle() {
-        toggleTheme();
-    }
-    
 </script>
 
 <header class="top-0 left-0 right-0 z-50 bg-background border-b border-border w-full shadow-lg">
