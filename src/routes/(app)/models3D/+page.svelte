@@ -5,12 +5,18 @@
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
     import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
+<<<<<<< HEAD
     import ImportModelPopupComponent from '$lib/components/ImportModelPopup/ImportModelPopupComponent.svelte';
     import EditModelPopupComponent from '$lib/components/EditModelPopup/EditModelPopupComponent.svelte';
     import ConfirmDialogComponent from '$lib/components/ConfirmDialog/ConfirmDialogComponent.svelte';
 
     let { data } = $props();
     let isAuthenticated = data?.isAuthenticated ?? false;
+=======
+    import {EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle, Root} from "$lib/components/ui/empty";
+    import {Button} from "$lib/components/ui/button";
+
+>>>>>>> origin/anthony
     let searchQuery = $state('');
     let selectedCategory = $state('');
     let sortBy = $state('');
@@ -25,6 +31,7 @@
         modelPath: ''
     });
 
+<<<<<<< HEAD
     let importPopupOpen = $state(false);
     let editPopupOpen = $state(false);
     let deleteConfirmOpen = $state(false);
@@ -33,10 +40,14 @@
     let selectedModelId: number | null = $state(null);
 
     let models = $state<any[]>([]);
+=======
+    let models: any[] = [];
+>>>>>>> origin/anthony
 
     async function loadModels() {
         isLoading = true;
         loadError = '';
+<<<<<<< HEAD
         
         try {
             const response = await fetch('/api/models', {
@@ -52,9 +63,21 @@
             isLoading = false;
         } catch (error) {
             console.error('Erreur lors du chargement des modèles:', error);
+=======
+
+        const response = await fetch('/api/models');
+        const data = await response.json();
+
+        if (!response.ok) {
+>>>>>>> origin/anthony
             loadError = 'Impossible de charger les modèles. Veuillez réessayer plus tard.';
             isLoading = false;
+            return;
         }
+
+        models = data.models || [];
+        filteredModels = [...models];
+        isLoading = false;
     }
 
     function resetPageState() {
@@ -64,9 +87,18 @@
             category: '',
             modelPath: ''
         };
+
         searchQuery = '';
         selectedCategory = '';
         sortBy = '';
+<<<<<<< HEAD
+=======
+
+        if (models.length > 0) {
+            filteredModels = [...models];
+        }
+
+>>>>>>> origin/anthony
         pageKey++;
     }
 
@@ -115,11 +147,6 @@
         selectedCategory = value;
     }
 
-    function handleSortChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-        sortBy = target.value;
-    }
-
     function openModelPopup(model: any) {
         selectedModelId = model.id;
         currentPopup = {
@@ -137,6 +164,7 @@
 
     async function downloadModel(event: CustomEvent) {
         const { modelPath, title } = event.detail;
+<<<<<<< HEAD
         try {
             const response = await fetch(modelPath);
             if (!response.ok) {
@@ -154,8 +182,26 @@
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Erreur lors du téléchargement:', error);
+=======
+
+        const response = await fetch(modelPath);
+
+        if (!response.ok) {
+>>>>>>> origin/anthony
             alert('Erreur lors du téléchargement du modèle. Vérifiez que le fichier existe.');
+            return;
         }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title}.glb`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
     }
 
     function handleOpenImport() {
@@ -243,10 +289,11 @@
     }
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-muted">
 
     <section class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {#if isLoading}
+<<<<<<< HEAD
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {#each Array(10) as _}
                     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden animate-pulse">
@@ -270,6 +317,28 @@
                 title="Erreur de chargement"
                 description={loadError}
             />
+=======
+            <div class="flex items-center justify-center min-h-[400px]">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <p class="mt-4 text-muted-foreground">Chargement des modèles...</p>
+                </div>
+            </div>
+        {:else if loadError}
+            <Root>
+                <EmptyHeader>
+                    <EmptyTitle>Erreur de chargement</EmptyTitle>
+                    <EmptyDescription>
+                        Le page n'a pas pu être chargée. Veuillez réessayer.
+                    </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                    <Button onclick={() => { window.location.reload(); } }>
+                        Réessayer
+                    </Button>
+                </EmptyContent>
+            </Root>
+>>>>>>> origin/anthony
         {:else}
             <ModelFiltersComponent 
                 {searchQuery}

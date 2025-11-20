@@ -1,5 +1,5 @@
 <script lang="ts">
-    import ButtonComponent from '$lib/components/Button/ButtonComponent.svelte';
+    import { Button } from '$lib/components/ui/button';
     import { onMount } from 'svelte';
     import * as THREE from 'three';
     import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
@@ -168,22 +168,20 @@
                 </p>
                 
                 <div class="flex flex-wrap gap-4 pt-4 justify-center lg:justify-start">
-                    <ButtonComponent
-                        color="primary"
-                        variant="outlined"
+                    <Button
+                        variant="outline"
                         href="/models3D"
-                        classe="!text-white hover:!text-white"
+                        class="!text-white hover:!text-white"
                     >
                         Découvrir
-                    </ButtonComponent>
-                    <ButtonComponent
-                        color="secondary"
-                        variant="outlined"
+                    </Button>
+                    <Button
+                        variant="outline"
                         href="/login"
-                        classe="!text-white hover:!text-white"
+                        class="!text-white hover:!text-white"
                     >
                         Commencer
-                    </ButtonComponent>
+                    </Button>
                 </div>
             </div>
 
@@ -263,14 +261,13 @@
                     <li class="my-4 !text-gray-300">Export ply</li>
                     <li class="my-4 !text-gray-300">Support communautaire</li>
                 </ul>
-                <ButtonComponent
-                    color="secondary"
-                    variant="outlined"
+                <Button
+                    variant="outline"
                     href="/signup"
-                    classe="!text-white hover:!text-white"
+                    class="!text-white hover:!text-white"
                 >
                     Commencer
-                </ButtonComponent>
+                </Button>
             </div>
             <div class="!bg-gray-900/80 backdrop-blur-sm !border-2 !border-cyan-500 p-8 rounded-xl text-center relative transition-all duration-300 hover:-translate-y-2 scale-105 hover:shadow-2xl hover:shadow-cyan-500/30 shadow-lg shadow-cyan-500/20">
                 <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 !bg-gradient-to-r !from-cyan-500 !to-blue-500 !text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">Populaire</div>
@@ -282,14 +279,13 @@
                     <li class="my-4 !text-gray-300">Support prioritaire</li>
                     <li class="my-4 !text-gray-300">Accès API</li>
                 </ul>
-                <ButtonComponent
-                    color="primary"
-                    variant="outlined"
+                <Button
+                    variant="default"
                     href="/signup"
-                    classe="!text-white hover:!text-white"
+                    class="!text-white hover:!text-white"
                 >
                     Commencer
-                </ButtonComponent>
+                </Button>
             </div>
             <div class="bg-gray-900/40 backdrop-blur-sm border border-purple-500/20 p-8 rounded-xl text-center relative transition-all duration-300 hover:-translate-y-2 hover:border-purple-400/40 hover:shadow-xl hover:shadow-purple-500/20">
                 <h3 class="text-2xl font-bold mb-4 !text-white">Entreprise</h3>
@@ -300,14 +296,13 @@
                     <li class="my-4 !text-gray-300">Formation incluse</li>
                     <li class="my-4 !text-gray-300">Intégration sur mesure</li>
                 </ul>
-                <ButtonComponent
-                    color="secondary"
-                    variant="outlined"
+                <Button
+                    variant="outline"
                     href="/contact"
-                    classe="!text-white hover:!text-white"
+                    class="!text-white hover:!text-white"
                 >
                     Contactez-nous
-                </ButtonComponent>
+                </Button>
             </div>
         </div>
     </section>

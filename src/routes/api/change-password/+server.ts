@@ -23,7 +23,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		const user = await prisma.user.findUnique({
-			where: { id: payload.id },
+			where: { id: Number(payload.id) },
 			select: { password: true, email: true }
 		});
 
@@ -48,7 +48,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const hashed = await bcrypt.hash(newPassword, 10);
 
 		await prisma.user.update({
-			where: { id: payload.id },
+			where: { id: Number(payload.id) },
 			data: { password: hashed }
 		});
 
