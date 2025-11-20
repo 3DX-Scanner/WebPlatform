@@ -24,6 +24,8 @@
     });
 </script>
 
-<HeaderComponent isAuthenticated={data?.isAuthenticated ?? false} />
-{@render children()}
-<FooterComponent />
+<div class="min-h-screen overflow-x-hidden w-full max-w-screen bg-white dark:bg-gray-950">
+    <HeaderComponent isAuthenticated={data?.isAuthenticated ?? false} />
+    {@render children()}
+    <FooterComponent />
+</div>
