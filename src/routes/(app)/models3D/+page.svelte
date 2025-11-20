@@ -5,18 +5,14 @@
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
     import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
-<<<<<<< HEAD
     import ImportModelPopupComponent from '$lib/components/ImportModelPopup/ImportModelPopupComponent.svelte';
     import EditModelPopupComponent from '$lib/components/EditModelPopup/EditModelPopupComponent.svelte';
     import ConfirmDialogComponent from '$lib/components/ConfirmDialog/ConfirmDialogComponent.svelte';
-
-    let { data } = $props();
-    let isAuthenticated = data?.isAuthenticated ?? false;
-=======
     import {EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle, Root} from "$lib/components/ui/empty";
     import {Button} from "$lib/components/ui/button";
 
->>>>>>> origin/anthony
+    let { data } = $props();
+    let isAuthenticated = data?.isAuthenticated ?? false;
     let searchQuery = $state('');
     let selectedCategory = $state('');
     let sortBy = $state('');
@@ -31,7 +27,6 @@
         modelPath: ''
     });
 
-<<<<<<< HEAD
     let importPopupOpen = $state(false);
     let editPopupOpen = $state(false);
     let deleteConfirmOpen = $state(false);
@@ -40,14 +35,10 @@
     let selectedModelId: number | null = $state(null);
 
     let models = $state<any[]>([]);
-=======
-    let models: any[] = [];
->>>>>>> origin/anthony
 
     async function loadModels() {
         isLoading = true;
         loadError = '';
-<<<<<<< HEAD
         
         try {
             const response = await fetch('/api/models', {
@@ -63,21 +54,10 @@
             isLoading = false;
         } catch (error) {
             console.error('Erreur lors du chargement des modèles:', error);
-=======
-
-        const response = await fetch('/api/models');
-        const data = await response.json();
-
-        if (!response.ok) {
->>>>>>> origin/anthony
             loadError = 'Impossible de charger les modèles. Veuillez réessayer plus tard.';
             isLoading = false;
             return;
         }
-
-        models = data.models || [];
-        filteredModels = [...models];
-        isLoading = false;
     }
 
     function resetPageState() {
@@ -91,14 +71,6 @@
         searchQuery = '';
         selectedCategory = '';
         sortBy = '';
-<<<<<<< HEAD
-=======
-
-        if (models.length > 0) {
-            filteredModels = [...models];
-        }
-
->>>>>>> origin/anthony
         pageKey++;
     }
 
@@ -121,7 +93,15 @@
             const category = normalize(model.category);
 
             const matchesSearch = q === '' || title.includes(q) || subtitle.includes(q) || content.includes(q) || category.includes(q);
-            const matchesCategory = !categoryFilter || model.category === categoryFilter;
+            
+            // Filtrer par public/privé
+            let matchesCategory = true;
+            if (categoryFilter === 'public') {
+                matchesCategory = model.isPublic === true;
+            } else if (categoryFilter === 'privé') {
+                matchesCategory = model.isPublic === false;
+            }
+            
             return matchesSearch && matchesCategory;
         });
 
@@ -137,7 +117,6 @@
     }
 
     let filteredModels = $derived(filterAndSortModels(models, searchQuery, selectedCategory, sortBy));
-    let categories = $derived(Array.from(new Set(models.map((m) => m.category))).sort());
 
     function handleSearchChange(value: string) {
         searchQuery = value;
@@ -164,7 +143,6 @@
 
     async function downloadModel(event: CustomEvent) {
         const { modelPath, title } = event.detail;
-<<<<<<< HEAD
         try {
             const response = await fetch(modelPath);
             if (!response.ok) {
@@ -182,26 +160,9 @@
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Erreur lors du téléchargement:', error);
-=======
-
-        const response = await fetch(modelPath);
-
-        if (!response.ok) {
->>>>>>> origin/anthony
             alert('Erreur lors du téléchargement du modèle. Vérifiez que le fichier existe.');
             return;
         }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${title}.glb`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
     }
 
     function handleOpenImport() {
@@ -289,47 +250,33 @@
     }
 </script>
 
-<div class="min-h-screen bg-muted">
+<div class="min-h-screen bg-background">
 
     <section class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {#if isLoading}
-<<<<<<< HEAD
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {#each Array(10) as _}
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden animate-pulse">
-                        <div class="w-full h-48 bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="bg-card rounded-2xl shadow-lg overflow-hidden animate-pulse">
+                        <div class="w-full h-48 bg-muted"></div>
                         
                         <div class="p-4 space-y-3">
                             <div class="flex items-center gap-2">
-                                <div class="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                                <div class="h-5 w-16 bg-muted rounded-full"></div>
                             </div>
                             
-                            <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                            <div class="h-6 bg-muted rounded w-3/4"></div>
                             
-                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                            <div class="h-4 bg-muted rounded w-1/2"></div>
                         </div>
                     </div>
                 {/each}
-            </div>
-        {:else if loadError}
-            <EmptyStateComponent 
-                icon=""
-                title="Erreur de chargement"
-                description={loadError}
-            />
-=======
-            <div class="flex items-center justify-center min-h-[400px]">
-                <div class="text-center">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                    <p class="mt-4 text-muted-foreground">Chargement des modèles...</p>
-                </div>
             </div>
         {:else if loadError}
             <Root>
                 <EmptyHeader>
                     <EmptyTitle>Erreur de chargement</EmptyTitle>
                     <EmptyDescription>
-                        Le page n'a pas pu être chargée. Veuillez réessayer.
+                        {loadError}
                     </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
@@ -338,15 +285,13 @@
                     </Button>
                 </EmptyContent>
             </Root>
->>>>>>> origin/anthony
         {:else}
             <ModelFiltersComponent 
                 {searchQuery}
                 {selectedCategory}
-                {categories}
                 onSearchChange={handleSearchChange}
                 onCategoryChange={handleCategoryChange}
-                on:openImport={handleOpenImport}
+                onOpenImport={handleOpenImport}
             />
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -379,14 +324,14 @@
         title={currentPopup.title}
         category={currentPopup.category}
         modelPath={currentPopup.modelPath}
-        on:close={closePopup}
-        on:download={downloadModel}
+        onclose={closePopup}
+        ondownload={downloadModel}
     />
 
     <ImportModelPopupComponent
         isOpen={importPopupOpen}
-        on:close={handleCloseImport}
-        on:uploaded={handleModelUploaded}
+        onclose={handleCloseImport}
+        onuploaded={handleModelUploaded}
     />
 
     <EditModelPopupComponent

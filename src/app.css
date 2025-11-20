@@ -73,6 +73,11 @@
     --transition-fast: 0.2s ease;
     --transition-normal: 0.3s ease;
     --transition-slow: 0.5s ease;
+
+    /* 3D Viewer colors */
+    --scene-bg: #f0f0f0;
+    --grid-color-1: #9ca3af;
+    --grid-color-2: #6b7280;
 }
 
 html, body {
@@ -97,6 +102,17 @@ body.editor-page {
 .dark body {
     background-color: #111827 !important;
     color: #ffffff !important;
+}
+
+/* Cursor pointer pour tous les boutons et liens */
+button,
+a,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+label[for] {
+    cursor: pointer;
 }
 
 .dark {
@@ -131,6 +147,11 @@ body.editor-page {
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+
+    /* 3D Viewer colors - dark mode */
+    --scene-bg: #1a1a1a;
+    --grid-color-1: #4b5563;
+    --grid-color-2: #374151;
 }
 
 @theme inline {

@@ -1,22 +1,22 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
     import { Input } from '$lib/components/ui/input';
+    import { Button } from '$lib/components/ui/button';
 
     let {
         searchQuery = '',
         selectedCategory = '',
         categories = [],
         onSearchChange = () => {},
-        onCategoryChange = () => {}
+        onCategoryChange = () => {},
+        onOpenImport = () => {}
     }: {
         searchQuery?: string;
         selectedCategory?: string;
         categories?: string[];
         onSearchChange?: (value: string) => void;
         onCategoryChange?: (value: string) => void;
+        onOpenImport?: () => void;
     } = $props();
-
-    const dispatch = createEventDispatcher();
 
     function handleSearchInput(event: Event) {
         const target = event.target as HTMLInputElement;
@@ -29,7 +29,7 @@
     }
 
     function handleImportClick() {
-        dispatch('openImport');
+        onOpenImport();
     }
 </script>
 
@@ -47,17 +47,22 @@
         onchange={handleCategorySelect}
         value={selectedCategory}
     >
-        <option value="">Toutes les catégories</option>
-        {#each categories as cat}
-            <option value={cat}>{cat}</option>
-        {/each}
+        <option value="">Tous</option>
+        {#if categories.length > 0}
+            {#each categories as category}
+                <option value={category}>{category}</option>
+            {/each}
+        {:else}
+            <option value="public">Public</option>
+            <option value="privé">Privé</option>
+        {/if}
     </select>
 
-    <button
-        class="md:col-span-1 h-11 w-full px-4 bg-black text-white rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200"
+    <Button
+        class="md:col-span-1 w-auto px-6"
         type="button"
         onclick={handleImportClick}
     >
         Importer
-    </button>
+    </Button>
 </div>

@@ -1,16 +1,40 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
     import { Button } from '$lib/components/ui/button';
     import ThreeDViewverComponent from '$lib/components/3DViewver/3DViewverComponent.svelte';
 
-    let { isOpen = false, title = '', category = '', modelPath = '' } = $props();
-    const dispatch = createEventDispatcher();
+    let { 
+        isOpen = false, 
+        title = '', 
+        category = '', 
+        modelPath = '',
+        onclose = () => {},
+        ondownload = () => {}
+    }: {
+        isOpen?: boolean;
+        title?: string;
+        category?: string;
+        modelPath?: string;
+        onclose?: () => void;
+        ondownload?: (event: CustomEvent) => void;
+    } = $props();
+    
     let viewerRef = $state<any>(null);
 
-    function closePopup() { dispatch('close'); }
-    function downloadModel() { dispatch('download', { modelPath, title }); }
-    function handleBackdropClick(event: MouseEvent) { if (event.target === event.currentTarget) closePopup(); }
-    function handleKeydown(event: KeyboardEvent) { if (event.key === 'Escape') closePopup(); }
+    function closePopup() { 
+        onclose();
+    }
+    
+    function downloadModel() { 
+        ondownload(new CustomEvent('download', { detail: { modelPath, title } }));
+    }
+    
+    function handleBackdropClick(event: MouseEvent) { 
+        if (event.target === event.currentTarget) closePopup(); 
+    }
+    
+    function handleKeydown(event: KeyboardEvent) { 
+        if (event.key === 'Escape') closePopup(); 
+    }
 </script>
 
 {#if isOpen}

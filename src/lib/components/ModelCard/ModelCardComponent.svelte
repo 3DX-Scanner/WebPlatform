@@ -254,9 +254,6 @@
                     </button>
                 {/if}
             </div>
-            <Badge variant="secondary" class="shrink-0">
-                {model.category}
-            </Badge>
         </div>
         {#if model.subtitle}
             <p class="text-sm text-muted-foreground line-clamp-1">{model.subtitle}</p>

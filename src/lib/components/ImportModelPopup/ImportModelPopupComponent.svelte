@@ -1,8 +1,18 @@
 <script lang="ts">
-    import { createEventDispatcher } from 'svelte';
-
-    let { isOpen = false } = $props();
-    const dispatch = createEventDispatcher();
+    import { Button } from '$lib/components/ui/button';
+    import { Input } from '$lib/components/ui/input';
+    import { Label } from '$lib/components/ui/label';
+    import { X } from 'lucide-svelte';
+    
+    let { 
+        isOpen = false,
+        onclose = () => {},
+        onuploaded = () => {}
+    }: {
+        isOpen?: boolean;
+        onclose?: () => void;
+        onuploaded?: () => void;
+    } = $props();
 
     let folderName = $state('');
     let imageFile: File | null = $state(null);
@@ -14,7 +24,7 @@
     function closePopup() {
         if (!isUploading) {
             resetForm();
-            dispatch('close');
+            onclose();
         }
     }
 
@@ -108,8 +118,8 @@
             uploadSuccess = true;
             setTimeout(() => {
                 resetForm();
-                dispatch('close');
-                dispatch('uploaded');
+                onclose();
+                onuploaded();
             }, 2000);
         } catch (error: any) {
             console.error('Erreur lors de l\'upload:', error);
@@ -122,58 +132,60 @@
 
 {#if isOpen}
     <div 
-        class="fixed inset-0 z-[1000] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" 
+        class="fixed inset-0 z-[1000] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" 
         role="dialog" 
         aria-modal="true" 
         tabindex="-1" 
         onclick={handleBackdropClick} 
         onkeydown={handleKeydown}
     >
-        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] w-full max-w-2xl p-6 transform transition-all duration-300 scale-100">
+        <div class="bg-card border border-border rounded-3xl shadow-lg w-full max-w-2xl p-6 transform transition-all duration-300 scale-100">
             <div class="flex items-start justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Importer un modèle 3D</h2>
-                <button 
-                    class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl leading-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                <h2 class="text-2xl font-bold text-card-foreground">Importer un modèle 3D</h2>
+                <Button 
+                    variant="ghost" 
+                    size="icon"
                     onclick={closePopup}
                     disabled={isUploading}
+                    class="h-8 w-8"
                 >
-                    ✕
-                </button>
+                    <X class="h-4 w-4" />
+                </Button>
             </div>
 
             <form onsubmit={handleSubmit} class="space-y-6">
                 <!-- Nom du dossier -->
                 <div>
-                    <label for="folderName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Nom du dossier <span class="text-red-500">*</span>
-                    </label>
-                    <input
+                    <Label for="folderName" class="mb-2">
+                        Nom du dossier <span class="text-destructive">*</span>
+                    </Label>
+                    <Input
                         id="folderName"
                         type="text"
                         bind:value={folderName}
                         placeholder="Ex: mon-modele-3d"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isUploading}
                         required
+                        class="w-full"
                     />
                 </div>
 
                 <!-- Image -->
                 <div>
-                    <label for="imageFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Image <span class="text-red-500">*</span>
-                    </label>
+                    <Label for="imageFile" class="mb-2">
+                        Image <span class="text-destructive">*</span>
+                    </Label>
                     <input
                         id="imageFile"
                         type="file"
                         accept="image/jpeg,image/jpg,image/png,image/webp"
                         onchange={handleImageChange}
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="w-full px-4 py-2 border border-input rounded-lg bg-background text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isUploading}
                         required
                     />
                     {#if imageFile}
-                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <p class="mt-2 text-sm text-muted-foreground">
                             Fichier sélectionné: {imageFile.name}
                         </p>
                     {/if}
@@ -181,20 +193,20 @@
 
                 <!-- Fichier 3D -->
                 <div>
-                    <label for="modelFile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Fichier 3D <span class="text-red-500">*</span>
-                    </label>
+                    <Label for="modelFile" class="mb-2">
+                        Fichier 3D <span class="text-destructive">*</span>
+                    </Label>
                     <input
                         id="modelFile"
                         type="file"
                         accept=".blend1,.x3d,.blend,.glb,.gltf,.ply,.stl,.obj,.usdc,.svg,.mtl,.fbx,.dae,.abc"
                         onchange={handleModelChange}
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="w-full px-4 py-2 border border-input rounded-lg bg-background text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={isUploading}
                         required
                     />
                     {#if modelFile}
-                        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <p class="mt-2 text-sm text-muted-foreground">
                             Fichier sélectionné: {modelFile.name}
                         </p>
                     {/if}
@@ -202,14 +214,14 @@
 
                 <!-- Messages d'erreur et de succès -->
                 {#if uploadError}
-                    <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                        <p class="text-sm text-red-800 dark:text-red-200">{uploadError}</p>
+                    <div class="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <p class="text-sm text-destructive">{uploadError}</p>
                     </div>
                 {/if}
 
                 {#if uploadSuccess}
-                    <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <p class="text-sm text-green-800 dark:text-green-200">
+                    <div class="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <p class="text-sm text-green-600 dark:text-green-400">
                             ✅ Modèle importé avec succès !
                         </p>
                     </div>
@@ -217,18 +229,18 @@
 
                 <!-- Boutons -->
                 <div class="flex items-center justify-end gap-3 pt-4">
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
                         onclick={closePopup}
                         disabled={isUploading}
-                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Annuler
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
+                        variant="default"
                         disabled={isUploading || !folderName.trim() || !imageFile || !modelFile}
-                        class="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {#if isUploading}
                             <span class="flex items-center gap-2">
@@ -241,7 +253,7 @@
                         {:else}
                             Importer
                         {/if}
-                    </button>
+                    </Button>
                 </div>
             </form>
         </div>

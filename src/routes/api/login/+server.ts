@@ -1,4 +1,4 @@
-import {json} from '@sveltejs/kit';
+import {json, type RequestEvent} from '@sveltejs/kit';
 import {prisma} from '$lib/server/prisma';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -9,11 +9,11 @@ interface LoginRequest {
     password: string;
 }
 
-export async function POST({request, cookies}) {
+export async function POST({request, cookies}: RequestEvent) {
     try {
         const {email, password}: LoginRequest = await request.json();
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: {email}
         });
 

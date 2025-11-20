@@ -31,7 +31,6 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			return json({ error: 'Utilisateur introuvable.' }, { status: 404 });
 		}
 
-		// Bloquer le changement de mot de passe pour les utilisateurs Google OAuth
 		if (user.password === '') {
 			return json({ 
 				error: 'Impossible de changer le mot de passe. Votre compte est géré par Google OAuth.' 
