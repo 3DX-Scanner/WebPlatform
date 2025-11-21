@@ -5,14 +5,12 @@
     
     let { data } = $props();
     
-    // Déterminer le plan actuel de l'utilisateur
     const currentSubscription = (data as any).currentSubscription;
     const currentPlanFromData = currentSubscription 
         ? (currentSubscription.planName.toLowerCase() as 'free' | 'pro' | 'enterprise')
         : 'free';
     let currentPlan = $state<'free' | 'pro' | 'enterprise'>(currentPlanFromData);
     
-    // Configuration visuelle pour chaque plan (non stockée en BDD)
     const planConfig: Record<string, {
         period: string;
         description: string;
@@ -59,7 +57,6 @@
                 ? parseFloat(dbPlan.price) 
                 : Number(dbPlan.price) || 0;
         
-        // Si c'est le plan actuel de l'utilisateur
         const isCurrentPlan = dbPlan.isCurrentPlan || false;
         
         return {
@@ -78,7 +75,6 @@
         };
     });
     
-    // Utiliser les features depuis la BDD
     const comparisonFeatures = data.comparisonFeatures || [];
     
     let isLoading = $state(false);
@@ -90,7 +86,7 @@
         }
         
         if (planId === 'free') {
-            return; // Le plan gratuit ne peut pas être acheté
+            return;
         }
         
         const plan = plans.find(p => p.id === planId);
@@ -99,32 +95,26 @@
             return;
         }
         
-        // Si c'est déjà le plan actuel, ne rien faire
         if (plan.isCurrentPlan) {
             return;
         }
         
-        // Vérifier si l'utilisateur est authentifié
         try {
             const authResponse = await fetch('/api/auth/status');
             const authData = await authResponse.json();
             
             if (!authData.authenticated) {
-                // Rediriger vers la page de connexion
                 const returnUrl = encodeURIComponent('/subscription');
                 window.location.href = `/login?redirect=${returnUrl}`;
                 return;
             }
         } catch (error) {
-            console.error('Erreur lors de la vérification de l\'authentification:', error);
-            // En cas d'erreur, rediriger quand même vers login pour être sûr
             window.location.href = '/login';
             return;
         }
         
         isLoading = true;
         try {
-            console.log('Création de la session Stripe pour le plan:', plan.planId);
             const response = await fetch('/api/stripe/create-checkout', {
                 method: 'POST',
                 headers: {
@@ -134,11 +124,8 @@
             });
             
             const data = await response.json();
-            console.log('Réponse de l\'API:', data);
             
             if (!response.ok) {
-                console.error('Erreur API:', data);
-                // Si l'erreur est liée à l'authentification, rediriger vers login
                 if (response.status === 401) {
                     window.location.href = '/login';
                     return;
@@ -147,17 +134,13 @@
             }
             
             if (data.url) {
-                console.log('Redirection vers Stripe:', data.url);
-                // Rediriger immédiatement vers Stripe Checkout
                 window.location.href = data.url;
             } else {
-                console.error('Pas d\'URL dans la réponse:', data);
                 throw new Error('URL de paiement non reçue');
             }
         } catch (error: any) {
-            console.error('Erreur complète:', error);
             isLoading = false;
-            alert(error.message || 'Une erreur est survenue lors du paiement. Vérifiez la console pour plus de détails.');
+            alert(error.message || 'Une erreur est survenue lors du paiement.');
         }
     }
     
@@ -172,11 +155,6 @@
             <p class="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Sélectionnez l'abonnement qui correspond le mieux à vos besoins. Tous les plans incluent nos fonctionnalités de base.
             </p>
-        </div>
-        
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute top-20 left-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
         </div>
     </section>
 
@@ -202,7 +180,6 @@
         </div>
     </section>
 
-    <!-- Comparison Table -->
     <section class="py-16 md:py-24 px-4 sm:px-6 md:px-8 bg-background relative">
         <div class="max-w-7xl mx-auto">
             <h2 class="text-center text-3xl md:text-4xl mb-8 text-foreground font-bold">Comparaison des plans</h2>
@@ -317,24 +294,3 @@
         </div>
     </section>
 </div>
-
-<style>
-    .hero-gradient-text {
-        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 25%, #8b5cf6 50%, #ec4899 75%, #06b6d4 100%);
-        background-size: 300% 300%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: gradient-shift 8s ease infinite;
-        filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.5));
-    }
-
-    @keyframes gradient-shift {
-        0%, 100% {
-            background-position: 0% 50%;
-        }
-        50% {
-            background-position: 100% 50%;
-        }
-    }
-</style>

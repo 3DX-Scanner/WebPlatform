@@ -32,7 +32,7 @@
         <div>
             <h4 class="text-sm font-semibold text-white">Contact</h4>
             <ul class="mt-3 space-y-2 text-gray-400">
-                <li>contact@3dx.com</li>
+                <li>3dxscanner@gmail.com</li>
                 <li>+33 1 23 45 67 89</li>
                 <li>6 Av. de Clavières, 30100 Alès</li>
             </ul>
