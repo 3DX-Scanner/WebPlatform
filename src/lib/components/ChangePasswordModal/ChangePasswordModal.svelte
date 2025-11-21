@@ -3,15 +3,18 @@
     import { Input } from '$lib/components/ui/input';
     import { Label } from '$lib/components/ui/label';
 
+    interface Props {
+        isOpen?: boolean;
+        onclose?: () => void;
+        onsaved?: () => void;
+    }
+
     let { 
         isOpen = false,
         onclose = () => {},
         onsaved = () => {}
-    }: { 
-        isOpen?: boolean;
-        onclose?: () => void;
-        onsaved?: () => void;
-    } = $props();
+    }: Props = $props();
+
     let newPassword = $state('');
     let confirmPassword = $state('');
     let error = $state('');

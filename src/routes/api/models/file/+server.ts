@@ -83,7 +83,7 @@ async function streamFileResponse(dataStream: NodeJS.ReadableStream, filePath: s
 	// Convertir le stream en buffer
 	const chunks: Buffer[] = [];
 	for await (const chunk of dataStream) {
-		chunks.push(chunk);
+		chunks.push(chunk as Buffer);
 	}
 	const buffer = Buffer.concat(chunks);
 
