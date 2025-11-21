@@ -7,7 +7,6 @@
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
     import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
-    import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
     import {EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Root} from "$lib/components/ui/empty";
     import {Link, ArrowUpRight, Pencil, Save, XCircle} from "@lucide/svelte";

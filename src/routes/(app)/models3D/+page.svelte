@@ -3,7 +3,6 @@
     import { afterNavigate } from '$app/navigation';
     import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
-    import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
     import ImportModelPopupComponent from '$lib/components/ImportModelPopup/ImportModelPopupComponent.svelte';
     import EditModelPopupComponent from '$lib/components/EditModelPopup/EditModelPopupComponent.svelte';
@@ -326,11 +325,12 @@
             </div>
             
             {#if filteredModels.length === 0}
-                <EmptyStateComponent 
-                    icon=""
-                    title="Aucun modèle trouvé"
-                    description="Essayez de modifier vos critères de recherche"
-                />
+                <Root>
+                    <EmptyHeader>
+                        <EmptyTitle>Aucun modèle trouvé</EmptyTitle>
+                        <EmptyDescription>Essayez de modifier vos critères de recherche</EmptyDescription>
+                    </EmptyHeader>
+                </Root>
             {/if}
         {/if}
     </section>
