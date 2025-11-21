@@ -3,12 +3,11 @@
     import { Check, X } from '@lucide/svelte';
     import PricingCardComponent from '$lib/components/PricingCard/PricingCardComponent.svelte';
     
+    let { data } = $props();
     let currentPlan = $state<'free' | 'pro' | 'enterprise'>('free');
     
-    const plans: Array<{
-        id: 'free' | 'pro' | 'enterprise';
-        name: string;
-        price: string;
+    // Configuration visuelle pour chaque plan (non stockée en BDD)
+    const planConfig: Record<string, {
         period: string;
         description: string;
         gradient: string;
@@ -16,144 +15,59 @@
         buttonText: string;
         buttonVariant: 'default' | 'outline';
         disabled: boolean;
-    }> = [
-        {
-            id: 'free',
-            name: 'Gratuit',
-            price: '0€',
+    }> = {
+        free: {
             period: '',
             description: 'Parfait pour commencer',
             gradient: 'from-gray-600 to-gray-700',
             borderColor: 'border-gray-500/20',
             buttonText: 'Plan actuel',
-            buttonVariant: 'outline' as const,
+            buttonVariant: 'outline',
             disabled: true
         },
-        {
-            id: 'pro',
-            name: 'Pro',
-            price: '7.99€',
+        pro: {
             period: '/mois',
             description: 'Le plus populaire',
             gradient: 'from-cyan-500 to-cyan-500 dark:from-cyan-500 dark:to-blue-600',
             borderColor: 'border-cyan-500',
             buttonText: 'Passer au plan Pro',
-            buttonVariant: 'default' as const,
+            buttonVariant: 'default',
             disabled: false
         },
-        {
-            id: 'enterprise',
-            name: 'Entreprise',
-            price: '20€',
+        enterprise: {
             period: '/mois',
             description: 'Pour les équipes',
             gradient: 'from-purple-600 to-pink-600',
             borderColor: 'border-purple-500/20',
             buttonText: 'Contactez-nous',
-            buttonVariant: 'outline' as const,
+            buttonVariant: 'outline',
             disabled: false
         }
-    ];
+    };
     
-    // Tableau comparatif des fonctionnalités
-    const comparisonFeatures = [
-        {
-            feature: 'Stockage cloud',
-            free: '1 Go',
-            pro: '500 Go',
-            enterprise: 'Illimité'
-        },
-        {
-            feature: 'Export PLY',
-            free: true,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export OBJ',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export FBX',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export GLB',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export haute résolution',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Scans illimités',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Support communautaire',
-            free: true,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Support prioritaire',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Assistance entreprise dédiée',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Accès API',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'API personnalisée',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Synchronisation cloud avancée',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Formation incluse',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Intégration sur mesure',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Gestion multi-utilisateurs',
-            free: false,
-            pro: false,
-            enterprise: true
-        }
-    ];
+    const plans = (data.plans || []).map(dbPlan => {
+        const config = planConfig[dbPlan.id] || planConfig.free;
+        const priceValue = typeof dbPlan.price === 'number' 
+            ? dbPlan.price 
+            : typeof dbPlan.price === 'string' 
+                ? parseFloat(dbPlan.price) 
+                : Number(dbPlan.price) || 0;
+        return {
+            id: dbPlan.id,
+            name: dbPlan.name,
+            price: priceValue === 0 ? '0' : priceValue.toFixed(2),
+            period: config.period,
+            description: config.description,
+            gradient: config.gradient,
+            borderColor: config.borderColor,
+            buttonText: config.buttonText,
+            buttonVariant: config.buttonVariant,
+            disabled: config.disabled
+        };
+    });
+    
+    // Utiliser les features depuis la BDD
+    const comparisonFeatures = data.comparisonFeatures || [];
     
     function handlePlanSelect(planId: 'free' | 'pro' | 'enterprise') {
         if (planId === 'enterprise') {
@@ -167,7 +81,6 @@
 </script>
 
 <div class="min-h-screen w-full bg-background">
-    <!-- Hero Section -->
     <section class="relative py-16 md:py-24 px-4 sm:px-6 md:px-8 overflow-hidden">
         <div class="max-w-4xl mx-auto text-center relative z-10">
             <h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
@@ -178,14 +91,12 @@
             </p>
         </div>
         
-        <!-- Background decoration -->
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
             <div class="absolute top-20 left-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl"></div>
             <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
         </div>
     </section>
 
-    <!-- Pricing Cards -->
     <section class="py-8 md:py-12 px-4 sm:px-6 md:px-8 relative">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
@@ -223,7 +134,6 @@
                                 <th class="text-center p-6 font-bold text-foreground bg-cyan-500/10">
                                     <div class="flex flex-col items-center gap-1">
                                         <span>Pro</span>
-                                        <span class="text-xs font-normal text-muted-foreground">7.99€/mois</span>
                                     </div>
                                 </th>
                                 <th class="text-center p-6 font-bold text-foreground bg-purple-500/10">Entreprise</th>
@@ -289,7 +199,6 @@
                 </div>
             </div>
             
-            <!-- Mobile-friendly cards view (hidden on desktop) -->
             <div class="md:hidden mt-8 space-y-6">
                 {#each plans as plan}
                     <div class="bg-card/80 backdrop-blur-sm border-2 {plan.borderColor} rounded-2xl p-6">

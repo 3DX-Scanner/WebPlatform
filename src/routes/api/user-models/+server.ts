@@ -108,12 +108,15 @@ export const GET: RequestHandler = async ({ locals }) => {
 			totalStorageUsed += file.size || 0;
 		}
 
-		// Récupérer le nombre de modèles likés par l'utilisateur
+		// Récupérer le nombre de modèles likés par l'utilisateur (seulement ceux avec liked = true)
 		let likedModelsCount = 0;
 		try {
-			// @ts-ignore - Le modèle ModelLike sera disponible après la génération du client Prisma
-			likedModelsCount = await prisma.modelLike.count({
-				where: { userId: userId }
+			// @ts-ignore - Le modèle Model sera disponible après la génération du client Prisma
+			likedModelsCount = await prisma.model.count({
+				where: { 
+					userId: userId,
+					liked: true
+				}
 			});
 		} catch (error) {
 			console.warn('⚠️  Impossible de compter les likes (table peut-être non créée):', error);

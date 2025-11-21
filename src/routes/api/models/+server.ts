@@ -134,24 +134,41 @@ export const GET: RequestHandler = async ({ locals }) => {
 				
 				try {
 					const modelIds = bucketModels.map(m => m.id);
-					// @ts-ignore - Le modèle ModelLike sera disponible après la génération du client Prisma
-					const likes = await prisma.modelLike.findMany({
+					// @ts-ignore - Le modèle Model sera disponible après la génération du client Prisma
+					// Récupérer tous les modèles likés (liked = true)
+					const likedModels = await prisma.model.findMany({
 						where: {
-							modelId: { in: modelIds }
+							modelId: { in: modelIds },
+							liked: true
 						}
 					});
+
+					// Récupérer les modèles de l'utilisateur connecté pour vérifier s'il a liké
+					let userModels: any[] = [];
+					if (locals.user) {
+						// @ts-ignore
+						userModels = await prisma.model.findMany({
+							where: {
+								modelId: { in: modelIds },
+								userId: locals.user.id
+							}
+						});
+					}
 
 					// Créer un map des likes par modèle
 					const likesByModel = new Map<string, number>();
 					const userLikes = new Set<string>();
 					
-					for (const like of likes) {
-						const count = likesByModel.get(like.modelId) || 0;
-						likesByModel.set(like.modelId, count + 1);
-						
-						// Vérifier si l'utilisateur connecté a liké ce modèle
-						if (locals.user && like.userId === locals.user.id) {
-							userLikes.add(like.modelId);
+					// Compter les likes (tous les modèles avec liked = true)
+					for (const model of likedModels) {
+						const count = likesByModel.get(model.modelId) || 0;
+						likesByModel.set(model.modelId, count + 1);
+					}
+					
+					// Vérifier si l'utilisateur connecté a liké ces modèles
+					for (const userModel of userModels) {
+						if (userModel.liked) {
+							userLikes.add(userModel.modelId);
 						}
 					}
 
@@ -162,7 +179,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 						isLiked: userLikes.has(model.id)
 					}));
 				} catch (error) {
-					// Si la table ModelLike n'existe pas encore, ajouter des valeurs par défaut
+					// Si la table Model n'existe pas encore, ajouter des valeurs par défaut
 					console.warn('⚠️  Impossible de charger les likes (table peut-être non créée):', error);
 					modelsWithLikes = bucketModels.map(model => ({
 						...model,
