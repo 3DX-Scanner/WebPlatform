@@ -107,7 +107,7 @@
                 </ul>
                 <Button
                     variant="outline"
-                    href="/signup"
+                    href="/subscription"
                 >
                     Commencer
                 </Button>
@@ -124,7 +124,7 @@
                 </ul>
                 <Button
                     variant="default"
-                    href="/signup"
+                    href="/subscription"
                 >
                     Commencer
                 </Button>

@@ -50,8 +50,8 @@ model DeviceModel {
 model Model {
   id        Int      @id @default(autoincrement())
   userId    Int
-  modelId   String // Identifiant du modèle (bucketName/folderName)
-  liked     Boolean  @default(true) // Indique si l'utilisateur a liké ce modèle
+  modelId   String
+  liked     Boolean  @default(true)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -61,10 +61,10 @@ model Model {
 
 model SubscriptionPlan {
   id            Int            @id @default(autoincrement())
-  name          String         @unique // "Free", "Pro", "Enterprise"
-  price         Decimal        @default(0) // Prix en euros (0 pour Free, 7.99 pour Pro, 20.00 pour Enterprise)
-  storageLimit  Int // Limite de stockage en MB (1024 MB pour Free, 512000 MB pour Pro, 1024000 MB pour Enterprise)
-  features      String[] // Liste des fonctionnalités (ex: ["Export ply", "Support communautaire"])
+  name          String         @unique
+  price         Decimal        @default(0)
+  storageLimit  Int
+  features      String[]
   createdAt     DateTime       @default(now())
   subscriptions Subscription[]
 
@@ -74,12 +74,12 @@ model SubscriptionPlan {
 model Subscription {
   id          Int              @id @default(autoincrement())
   userId      Int              @unique
-  planId      Int // Référence au plan d'abonnement
-  bucketName  String           @unique // Nom du bucket associé
-  storageUsed BigInt           @default(0) // Stockage utilisé en bytes
-  isActive    Boolean          @default(true) // Si l'abonnement est actif
+  planId      Int
+  bucketName  String           @unique
+  storageUsed BigInt           @default(0)
+  isActive    Boolean          @default(true)
   startDate   DateTime         @default(now())
-  endDate     DateTime? // Date d'expiration (null pour les abonnements gratuits)
+  endDate     DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -91,14 +91,14 @@ model Subscription {
 }
 
 model Payment {
-  id            String      @id @default(cuid())
+  id            String   @id @default(cuid())
   userId        Int
-  stripeSession String      @unique
-  amount        Int // Montant en centimes (ex: 799 pour 7.99€)
-  status        String      @default("pending") // "pending" | "paid" | "failed"
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSession String   @unique
+  amount        Int
+  status        String   @default("pending") // "pending" | "paid" | "failed"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([stripeSession])

@@ -8,9 +8,10 @@
     import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
+    import PricingCardComponent from '$lib/components/PricingCard/PricingCardComponent.svelte';
+    import ConfirmDialogComponent from '$lib/components/ConfirmDialog/ConfirmDialogComponent.svelte';
     import {EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Root} from "$lib/components/ui/empty";
     import {Link, ArrowUpRight, Pencil, Save, XCircle} from "@lucide/svelte";
-    import QRCode from 'qrcode';
 
     let { data }: {
         data: {
@@ -21,10 +22,25 @@
                 createdAt: string;
                 hasPassword: boolean;
             };
+            currentSubscription?: {
+                planId: number;
+                planName: string;
+                isActive: boolean;
+                startDate: string;
+                endDate: string | null;
+                storageLimit: number;
+            } | null;
+            plans?: Array<{
+                id: 'free' | 'pro' | 'enterprise';
+                planId: string;
+                name: string;
+                price: number;
+                storageLimit: number;
+            }>;
         };
     } = $props();
 
-    let selectedSection = $state<'securite' | 'preferences' | 'modeles' | 'abonnement'>('securite');
+    let selectedSection = $state<'preferences' | 'modeles' | 'abonnement'>('preferences');
     let editingPassword = $state(false);
     let showPwdModal = $state(false);
     let currentPassword = $state('');
@@ -58,10 +74,28 @@
         likedModelsCount?: number;
         storageUsed?: number;
         storageLimit?: number;
-        storageUsedMB?: string;
+        storageUsedMB?: number;
         storageLimitMB?: number;
+        storageLimitGB?: number;
         storagePercentage?: string;
     }>({});
+    
+    // Fonction pour formater le stockage utilisé
+    function formatStorageUsed(usedMB: number): string {
+        if (usedMB < 1024) {
+            // Moins de 1 Go, afficher en MB
+            return `${usedMB.toFixed(2)} MB`;
+        } else {
+            // 1 Go ou plus, afficher en Go avec virgule
+            const usedGB = usedMB / 1024;
+            return `${usedGB.toFixed(1).replace('.', ',')} Go`;
+        }
+    }
+    
+    // Fonction pour formater la limite de stockage
+    function formatStorageLimit(limitGB: number): string {
+        return `${limitGB.toFixed(0)} Go`;
+    }
 
     let currentPopup = $state({
         isOpen: false,
@@ -70,9 +104,6 @@
         modelPath: ''
     });
 
-    // QR Code pour synchronisation scanner
-    let qrCodeDataUrl = $state('');
-    let qrCodeCanvas = $state<HTMLCanvasElement>();
     let syncHeightTimeout: ReturnType<typeof setTimeout> | null = null;
     
     async function syncHeights() {
@@ -216,30 +247,9 @@
         }
     }
 
-    async function generateQRCode() {
-        try {
-            const syncToken = `scanner-sync-${data.user.id}-${Date.now()}`;
-            const syncUrl = `${window.location.origin}/api/scanner-sync?token=${syncToken}`;
-            
-            if (qrCodeCanvas) {
-                await QRCode.toCanvas(qrCodeCanvas, syncUrl, {
-                    width: 300,
-                    margin: 2,
-                    color: {
-                        dark: '#000000',
-                        light: '#FFFFFF'
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Erreur lors de la génération du QR code:', error);
-        }
-    }
-
     onMount(() => {
         syncHeights();
         
-        // Debounce le resize pour éviter trop d'appels
         let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
         const onResize = () => {
             if (resizeTimeout) {
@@ -247,16 +257,10 @@
             }
             resizeTimeout = setTimeout(() => {
                 syncHeights();
-            }, 150); // Debounce de 150ms
+            }, 150);
         };
         
         window.addEventListener('resize', onResize);
-        
-        tick().then(() => {
-            if (selectedSection === 'securite' && qrCodeCanvas) {
-                generateQRCode();
-            }
-        });
         
         return () => {
             window.removeEventListener('resize', onResize);
@@ -331,17 +335,79 @@
         }
     }
 
-    function handleSectionChange(section: 'securite' | 'preferences' | 'modeles' | 'abonnement') {
+    function handleSectionChange(section: 'preferences' | 'modeles' | 'abonnement') {
         selectedSection = section;
-        if (section === 'securite') {
-            tick().then(() => {
-                if (qrCodeCanvas) {
-                    generateQRCode();
-                }
-            });
-        } else if (section === 'modeles' && userModels.length === 0) {
+        if (section === 'modeles' && userModels.length === 0) {
             loadUserModels();
         }
+    }
+    
+    let isLoadingPlan = $state(false);
+    let isCancellingSubscription = $state(false);
+    let showCancelDialog = $state(false);
+    
+    function openCancelDialog() {
+        showCancelDialog = true;
+    }
+    
+    function closeCancelDialog() {
+        showCancelDialog = false;
+    }
+    
+    async function handleCancelSubscription() {
+        closeCancelDialog();
+        isCancellingSubscription = true;
+        try {
+            const response = await fetch('/api/stripe/cancel-subscription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors de l\'annulation');
+            }
+            
+            alert(data.message || 'Abonnement annulé avec succès');
+            // Recharger la page pour mettre à jour l'affichage
+            window.location.reload();
+        } catch (error: any) {
+            console.error('Erreur:', error);
+            alert(error.message || 'Une erreur est survenue lors de l\'annulation');
+            isCancellingSubscription = false;
+        }
+    }
+    
+    function getPlanStyles(planId: string) {
+        const styles: Record<string, { gradient: string; borderColor: string }> = {
+            free: { gradient: 'from-gray-600 to-gray-700', borderColor: 'border-gray-500/20' },
+            pro: { gradient: 'from-cyan-500 to-cyan-500 dark:from-cyan-500 dark:to-blue-600', borderColor: 'border-cyan-500' },
+            enterprise: { gradient: 'from-purple-600 to-pink-600', borderColor: 'border-purple-500/20' }
+        };
+        return styles[planId] || styles.free;
+    }
+    
+    function handlePlanSelect(planId: 'free' | 'pro' | 'enterprise') {
+        if (planId === 'enterprise') {
+            window.location.href = '/contact';
+            return;
+        }
+        
+        if (planId === 'free') {
+            return;
+        }
+        
+        if (data.currentSubscription) {
+            const currentPlanName = data.currentSubscription.planName?.toLowerCase();
+            if (currentPlanName === planId) {
+                return;
+            }
+        }
+        
+        window.location.href = '/subscription';
     }
 
     function handlePasswordFieldChange(field: string, value: string) {
@@ -444,14 +510,13 @@
                     {data.user.email.charAt(0).toUpperCase()}
                 </div>
                 <div class="font-extrabold text-card-foreground text-lg">{data.user.username}</div>
-                <div class="text-muted-foreground text-base">{data.user.email || 'Connecté via Google'}</div>
+                <div class="text-muted-foreground text-base">{data.user.email}</div>
                 <div class="mt-1 px-3 py-2 rounded-full text-sm bg-secondary text-secondary-foreground">
                     Membre depuis {new Date(data.user.createdAt).toLocaleDateString('fr-FR')}
                 </div>
 
                 <ul class="w-full grid gap-3 mt-4" role="tablist">
                     {#each [
-                        { id: 'securite', label: 'Synchronisation Scanner' },
                         { id: 'preferences', label: 'Préférences' },
                         { id: 'modeles', label: 'Mes modèles' },
                         { id: 'abonnement', label: 'Abonnement' }
@@ -469,7 +534,7 @@
                                 class:text-secondary-foreground={selectedSection !== section.id}
                                 class:border-transparent={selectedSection !== section.id}
                                 aria-selected={selectedSection === section.id} 
-                                onclick={() => handleSectionChange(section.id as 'securite' | 'preferences' | 'modeles' | 'abonnement')}
+                                onclick={() => handleSectionChange(section.id as 'preferences' | 'modeles' | 'abonnement')}
                             >
                                 {section.label}
                             </button>
@@ -487,24 +552,7 @@
 
         <main>
             <div class="bg-card rounded-2xl shadow-lg p-7 overflow-auto h-full" bind:this={rightCardEl}>
-            {#if selectedSection==='securite'}
-                <section class="mb-4">
-                    <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Synchronisation Scanner</h3>
-                    <div class="flex flex-col items-center justify-center gap-5 min-h-[400px]">
-                        <div class="flex flex-col items-center gap-4">
-                            <p class="text-muted-foreground text-center mb-4 text-base">
-                                Scannez ce QR code avec votre application Scanner 3D pour synchroniser votre appareil
-                            </p>
-                            <div class="bg-card p-4 rounded-xl shadow-lg">
-                                <canvas bind:this={qrCodeCanvas} class="w-[300px] h-[300px]"></canvas>
-                            </div>
-                            <p class="text-sm text-muted-foreground text-center mt-2">
-                                Le QR code expire après utilisation
-                            </p>
-                        </div>
-                    </div>
-                </section>
-            {:else if selectedSection==='preferences'}
+            {#if selectedSection==='preferences'}
                 <section class="mb-4">
                     <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Préférences</h3>
                     <div class="grid gap-4">
@@ -584,11 +632,6 @@
                             {/if}
                         </div>
                         
-                        <!-- Double authentification -->
-                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-4">
-                            <span class="font-bold text-card-foreground">Double authentification</span>
-                            <input type="text" value="Désactivée" disabled class="border border-border rounded-lg px-3 py-2 bg-muted text-muted-foreground cursor-not-allowed" />
-                        </div>
                     </div>
                     </section>
             {:else if selectedSection==='modeles'}
@@ -650,9 +693,9 @@
                                 <div>
                                     <p class="text-sm font-semibold mb-1 uppercase tracking-wide text-muted-foreground">Stockage utilisé</p>
                                     <p class="text-2xl font-bold text-card-foreground">
-                                        {userStats.storageUsedMB || '0'} MB
+                                        {formatStorageUsed(userStats.storageUsedMB || 0)}
                                         <span class="text-sm font-normal text-muted-foreground">
-                                            / {userStats.storageLimitMB || 1024} MB
+                                            / {formatStorageLimit(userStats.storageLimitGB || 1)}
                                         </span>
                                     </p>
                                 </div>
@@ -730,27 +773,69 @@
                         {/if}
                     {/if}
                 </section>
-            {:else}
+            {:else if selectedSection==='abonnement'}
                 <section class="mb-4">
                     <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Abonnement</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {#each [
-                            { id: 'free', name: 'Free Plan', description: 'Accès limité aux fonctionnalités.', current: true, gradient: 'from-gray-700 to-gray-800' },
-                            { id: 'pro', name: 'Pro', description: 'Limites étendues et plus de confort.', current: false, gradient: 'from-blue-600 to-indigo-600' },
-                            { id: 'ultra', name: 'Ultra', description: 'Limites très élevées et accès anticipé.', current: false, gradient: 'from-purple-600 to-pink-600' }
-                        ] as plan}
-                            <div class="bg-gradient-to-br {plan.gradient} text-white rounded-xl p-6 grid gap-3 shadow-lg hover:shadow-xl transition-shadow duration-200 border border-white/10">
-                                <h4 class="text-white text-xl font-bold">{plan.name}</h4>
-                                <p class="text-white/90 text-sm leading-relaxed">{plan.description}</p>
-                                <button 
-                                    type="button" 
-                                    class="bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 backdrop-blur-sm border border-white/20" 
-                                    disabled={plan.current}
-                                >
-                                    {plan.current ? 'Plan Actuel' : `Passer en ${plan.name}`}
-                                </button>
+                    
+                    {#if data.plans}
+                        {@const currentPlan = data.currentSubscription 
+                            ? data.plans.find(p => p.id === data.currentSubscription?.planName.toLowerCase())
+                            : data.plans.find(p => p.price === 0)}
+                        {@const hasActivePaidSubscription = data.currentSubscription?.isActive && currentPlan && currentPlan.price > 0}
+                        
+                        {#if currentPlan}
+                            <div class="mb-6 p-4 {hasActivePaidSubscription ? 'bg-cyan-500/10 border border-cyan-500/20' : 'bg-muted/50 border border-border'} rounded-lg">
+                                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div class="text-center md:text-left">
+                                        <p class="text-foreground">
+                                            <span class="font-semibold">Plan actuel :</span> {currentPlan.name}
+                                        </p>
+                                        {#if data.currentSubscription?.endDate}
+                                            <p class="text-sm text-muted-foreground mt-1">
+                                                Expire le <span class="font-semibold text-foreground">{new Date(data.currentSubscription.endDate).toLocaleDateString('fr-FR')}</span>
+                                            </p>
+                                        {/if}
+                                        <p class="text-sm text-muted-foreground mt-1">
+                                            Limite de stockage : <span class="font-semibold text-foreground">{currentPlan.storageLimit / 1024} Go</span>
+                                        </p>
+                                    </div>
+                                    {#if hasActivePaidSubscription}
+                                        <button
+                                            onclick={openCancelDialog}
+                                            disabled={isCancellingSubscription}
+                                            class="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border/50 hover:border-border rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isCancellingSubscription ? 'Annulation...' : 'Annuler l\'abonnement'}
+                                        </button>
+                                    {/if}
+                                </div>
                             </div>
-                        {/each}
+                        {/if}
+                    {/if}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {#if data.plans}
+                            {#each data.plans as dbPlan}
+                                {@const isCurrentPlan = data.currentSubscription?.planName.toLowerCase() === dbPlan.id || (!data.currentSubscription && dbPlan.id === 'free')}
+                                {@const styles = getPlanStyles(dbPlan.id)}
+                                {@const period = dbPlan.price > 0 ? '/mois' : ''}
+                                {@const buttonText = isCurrentPlan ? 'Plan actuel' : (dbPlan.id === 'enterprise' ? 'Contactez-nous' : 'Choisir ce plan')}
+                                {@const buttonVariant = isCurrentPlan ? 'outline' : (dbPlan.id === 'enterprise' ? 'outline' : 'default')}
+                                <PricingCardComponent
+                                    id={dbPlan.id}
+                                    name={dbPlan.name}
+                                    price={dbPlan.price === 0 ? '0' : dbPlan.price.toFixed(2)}
+                                    period={isCurrentPlan ? '' : period}
+                                    description=""
+                                    gradient={styles.gradient}
+                                    borderColor={styles.borderColor}
+                                    buttonText={buttonText}
+                                    buttonVariant={buttonVariant}
+                                    disabled={isCurrentPlan || isLoadingPlan}
+                                    onSelect={handlePlanSelect}
+                                />
+                            {/each}
+                        {/if}
                     </div>
                 </section>
             {/if}
@@ -769,6 +854,17 @@
     modelPath={currentPopup.modelPath}
     onclose={closePopup}
     ondownload={downloadModel}
+/>
+
+<ConfirmDialogComponent
+    isOpen={showCancelDialog}
+    title="Annuler l'abonnement"
+    message="Êtes-vous sûr de vouloir annuler votre abonnement ?{'\n\n'}Vous conserverez l'accès à toutes les fonctionnalités jusqu'à la fin de la période payée. Après cette date, votre compte passera automatiquement au plan gratuit."
+    confirmText="Oui, annuler"
+    cancelText="Non, garder"
+    variant="warning"
+    on:confirm={handleCancelSubscription}
+    on:cancel={closeCancelDialog}
 />
 
 <style>

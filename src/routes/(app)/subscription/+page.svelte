@@ -4,7 +4,13 @@
     import PricingCardComponent from '$lib/components/PricingCard/PricingCardComponent.svelte';
     
     let { data } = $props();
-    let currentPlan = $state<'free' | 'pro' | 'enterprise'>('free');
+    
+    // Déterminer le plan actuel de l'utilisateur
+    const currentSubscription = (data as any).currentSubscription;
+    const currentPlanFromData = currentSubscription 
+        ? (currentSubscription.planName.toLowerCase() as 'free' | 'pro' | 'enterprise')
+        : 'free';
+    let currentPlan = $state<'free' | 'pro' | 'enterprise'>(currentPlanFromData);
     
     // Configuration visuelle pour chaque plan (non stockée en BDD)
     const planConfig: Record<string, {
@@ -45,36 +51,113 @@
         }
     };
     
-    const plans = (data.plans || []).map(dbPlan => {
+    const plans = (data.plans || []).map((dbPlan: any) => {
         const config = planConfig[dbPlan.id] || planConfig.free;
         const priceValue = typeof dbPlan.price === 'number' 
             ? dbPlan.price 
             : typeof dbPlan.price === 'string' 
                 ? parseFloat(dbPlan.price) 
                 : Number(dbPlan.price) || 0;
+        
+        // Si c'est le plan actuel de l'utilisateur
+        const isCurrentPlan = dbPlan.isCurrentPlan || false;
+        
         return {
             id: dbPlan.id,
+            planId: dbPlan.planId as string,
             name: dbPlan.name,
             price: priceValue === 0 ? '0' : priceValue.toFixed(2),
             period: config.period,
             description: config.description,
             gradient: config.gradient,
             borderColor: config.borderColor,
-            buttonText: config.buttonText,
-            buttonVariant: config.buttonVariant,
-            disabled: config.disabled
+            buttonText: isCurrentPlan ? 'Plan actuel' : config.buttonText,
+            buttonVariant: isCurrentPlan ? 'outline' : config.buttonVariant,
+            disabled: isCurrentPlan || config.disabled,
+            isCurrentPlan
         };
     });
     
     // Utiliser les features depuis la BDD
     const comparisonFeatures = data.comparisonFeatures || [];
     
-    function handlePlanSelect(planId: 'free' | 'pro' | 'enterprise') {
+    let isLoading = $state(false);
+    
+    async function handlePlanSelect(planId: 'free' | 'pro' | 'enterprise') {
         if (planId === 'enterprise') {
             window.location.href = '/contact';
-        } else if (planId === 'pro') {
-            currentPlan = planId;
-            alert('Redirection vers le paiement...');
+            return;
+        }
+        
+        if (planId === 'free') {
+            return; // Le plan gratuit ne peut pas être acheté
+        }
+        
+        const plan = plans.find(p => p.id === planId);
+        if (!plan || !plan.planId) {
+            alert('Erreur: Plan introuvable');
+            return;
+        }
+        
+        // Si c'est déjà le plan actuel, ne rien faire
+        if (plan.isCurrentPlan) {
+            return;
+        }
+        
+        // Vérifier si l'utilisateur est authentifié
+        try {
+            const authResponse = await fetch('/api/auth/status');
+            const authData = await authResponse.json();
+            
+            if (!authData.authenticated) {
+                // Rediriger vers la page de connexion
+                const returnUrl = encodeURIComponent('/subscription');
+                window.location.href = `/login?redirect=${returnUrl}`;
+                return;
+            }
+        } catch (error) {
+            console.error('Erreur lors de la vérification de l\'authentification:', error);
+            // En cas d'erreur, rediriger quand même vers login pour être sûr
+            window.location.href = '/login';
+            return;
+        }
+        
+        isLoading = true;
+        try {
+            console.log('Création de la session Stripe pour le plan:', plan.planId);
+            const response = await fetch('/api/stripe/create-checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ planId: plan.planId })
+            });
+            
+            const data = await response.json();
+            console.log('Réponse de l\'API:', data);
+            
+            if (!response.ok) {
+                console.error('Erreur API:', data);
+                // Si l'erreur est liée à l'authentification, rediriger vers login
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                throw new Error(data.error || 'Erreur lors de la création de la session de paiement');
+            }
+            
+            if (data.url) {
+                console.log('Redirection vers Stripe:', data.url);
+                // Rediriger immédiatement vers Stripe Checkout
+                window.location.href = data.url;
+            } else {
+                console.error('Pas d\'URL dans la réponse:', data);
+                throw new Error('URL de paiement non reçue');
+            }
+        } catch (error: any) {
+            console.error('Erreur complète:', error);
+            isLoading = false;
+            alert(error.message || 'Une erreur est survenue lors du paiement. Vérifiez la console pour plus de détails.');
         }
     }
     
@@ -111,7 +194,7 @@
                         borderColor={plan.borderColor}
                         buttonText={plan.buttonText}
                         buttonVariant={plan.buttonVariant}
-                        disabled={plan.disabled}
+                        disabled={plan.disabled || isLoading}
                         onSelect={handlePlanSelect}
                     />
                 {/each}
