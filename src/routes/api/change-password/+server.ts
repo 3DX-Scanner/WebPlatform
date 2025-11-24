@@ -4,7 +4,6 @@ import { prisma } from '$lib/server/prisma';
 import bcrypt from 'bcryptjs';
 import { verifyJwtFromCookies } from '$lib/server/jwtVerify';
 
-
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const payload = verifyJwtFromCookies(cookies);

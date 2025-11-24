@@ -16,17 +16,10 @@
     function init() {
         editor = new EDITOR.Editor(container);
         window.addEventListener('resize', editor.resize);
-        // Désactiver le padding-top du body pour cette page
-        document.body.classList.add('editor-page');
     }
 
     onMount(() => {
         init();
-    });
-
-    onDestroy(() => {
-        // Réactiver le padding-top quand on quitte la page
-        document.body.classList.remove('editor-page');
     });
 </script>
 

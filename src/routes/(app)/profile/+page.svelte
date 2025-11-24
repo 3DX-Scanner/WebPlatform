@@ -11,6 +11,7 @@
     import {EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Root} from "$lib/components/ui/empty";
     import {ArrowUpRight, Link, Pencil, Save} from "lucide-svelte";
     import Pairing from "$lib/components/Pairing/Pairing.svelte";
+    import * as Dialog from "$lib/components/ui/dialog";
 
     let {data}: {
         data: {
@@ -25,6 +26,9 @@
     } = $props();
 
     let showPairingDialog = $state(false);
+    let pairedDevices = $state<any[]>([]);
+    let isLoadingDevices = $state(false);
+    let deviceToUnpair = $state<number | null>(null);
 
     let selectedSection = $state('devices');
     let editingPassword = $state(false);
@@ -210,6 +214,9 @@
     onMount(() => {
         syncHeights();
 
+        // Load devices on mount since devices is the default section
+        // loadPairedDevices();
+
         // Debounce le resize pour éviter trop d'appels
         let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
         const onResize = () => {
@@ -301,7 +308,60 @@
         if (section === 'modeles' && userModels.length === 0) {
             loadUserModels();
         }
+
+        if (section === 'devices' && pairedDevices.length === 0) {
+            loadPairedDevices();
+        }
     }
+
+    async function loadPairedDevices() {
+        isLoadingDevices = true;
+        try {
+            const response = await fetch('/api/user-devices');
+            const data = await response.json();
+
+            if (response.ok) {
+                pairedDevices = data.devices || [];
+            }
+        } catch (err) {
+            console.error('Error loading devices:', err);
+        } finally {
+            isLoadingDevices = false;
+        }
+    }
+
+    async function confirmUnpair(deviceId: number) {
+        deviceToUnpair = deviceId;
+    }
+
+    async function unpairDevice() {
+        if (!deviceToUnpair) return;
+
+        try {
+            const response = await fetch(`/api/user-devices/${deviceToUnpair}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                pairedDevices = pairedDevices.filter(d => d.id !== deviceToUnpair);
+                deviceToUnpair = null;
+            }
+        } catch (err) {
+            console.error('Error unpairing device:', err);
+        }
+    }
+
+    function cancelUnpair() {
+        deviceToUnpair = null;
+    }
+
+    // Effect to refresh devices list when pairing dialog closes with success
+    $effect(() => {
+        if (!showPairingDialog && selectedSection === 'devices') {
+            // Reload devices when dialog closes
+            loadPairedDevices();
+        }
+    });
 
     function handlePasswordFieldChange(field: string, value: string) {
         if (field === 'current') currentPassword = value;
@@ -416,17 +476,17 @@
                     ] as section}
                         <li>
                             <button
-                                    type="button"
-                                    role="tab"
-                                    class="w-full text-left rounded-xl px-4 py-3 font-semibold transition-all duration-200 tab-button"
-                                    class:bg-primary={selectedSection === section.id}
-                                    class:text-primary-foreground={selectedSection === section.id}
-                                    class:border-primary={selectedSection === section.id}
-                                    class:shadow-md={selectedSection === section.id}
-                                    class:bg-secondary={selectedSection !== section.id}
-                                    class:text-secondary-foreground={selectedSection !== section.id}
-                                    aria-selected={selectedSection === section.id}
-                                    onclick={() => handleSectionChange(section.id)}
+                                type="button"
+                                role="tab"
+                                class="w-full text-left rounded-xl px-4 py-3 font-semibold transition-all duration-200 tab-button"
+                                class:bg-primary={selectedSection === section.id}
+                                class:text-primary-foreground={selectedSection === section.id}
+                                class:border-primary={selectedSection === section.id}
+                                class:shadow-md={selectedSection === section.id}
+                                class:bg-secondary={selectedSection !== section.id}
+                                class:text-secondary-foreground={selectedSection !== section.id}
+                                aria-selected={selectedSection === section.id}
+                                onclick={() => handleSectionChange(section.id)}
                             >
                                 {section.label}
                             </button>
@@ -447,30 +507,99 @@
                 {#if selectedSection === 'devices'}
                     <section class="mb-4">
                         <h3 class="m-0 mb-8 text-card-foreground text-center text-2xl">Appareils</h3>
-                        <Root>
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <Link/>
-                                </EmptyMedia>
-                                <EmptyTitle>Aucun appareil associé</EmptyTitle>
-                                <EmptyDescription>
-                                    Aucun appareil n'est associé à votre compte pour le moment.
-                                    <br>Commencez par associer un appareil.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                            <EmptyContent>
-                                <Button onclick={() => { showPairingDialog = true; }}>
-                                    Associer un appareil
+
+                        {#if isLoadingDevices}
+                            <div class="flex justify-center items-center py-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            </div>
+                        {:else if pairedDevices.length === 0}
+                            <Root>
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <Link/>
+                                    </EmptyMedia>
+                                    <EmptyTitle>Aucun appareil associé</EmptyTitle>
+                                    <EmptyDescription>
+                                        Aucun appareil n'est associé à votre compte pour le moment.
+                                        <br>Commencez par associer un appareil.
+                                    </EmptyDescription>
+                                </EmptyHeader>
+                                <EmptyContent>
+                                    <Button onclick={() => { showPairingDialog = true; }}>
+                                        Associer un appareil
+                                    </Button>
+                                </EmptyContent>
+                                <Button variant="link" class="text-muted-foreground" size="sm">
+                                    <a href="#/">
+                                        Documentation
+                                        <ArrowUpRight class="inline"/>
+                                    </a>
                                 </Button>
-                                <Pairing bind:open={showPairingDialog} />
-                            </EmptyContent>
-                            <Button variant="link" class="text-muted-foreground" size="sm">
-                                <a href="#/">
-                                    Documentation
-                                    <ArrowUpRight class="inline"/>
-                                </a>
-                            </Button>
-                        </Root>
+                            </Root>
+                        {:else}
+                            <div class="mb-4 flex justify-end">
+                                <Button onclick={() => { showPairingDialog = true; }}>
+                                    Associer un nouvel appareil
+                                </Button>
+                            </div>
+
+                            <div class="grid gap-4">
+                                {#each pairedDevices as device (device.id)}
+                                    <div class="rounded-xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 bg-card">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1">
+                                                <div class="flex items-center gap-3 mb-3">
+                                                    <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                        <Link class="text-primary" size={24}/>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="text-lg font-bold text-card-foreground mb-1">{device.modelName}</h4>
+                                                        <p class="text-sm text-muted-foreground">Numéro de série: <span class="font-mono">{device.serialNumber}</span></p>
+                                                    </div>
+                                                </div>
+                                                <div class="grid grid-cols-2 gap-3 text-sm">
+                                                    <div>
+                                                        <span class="text-muted-foreground">Associé le:</span>
+                                                        <span class="ml-2 font-medium text-card-foreground">{new Date(device.pairedAt).toLocaleDateString('fr-FR')}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-muted-foreground">Créé le:</span>
+                                                        <span class="ml-2 font-medium text-card-foreground">{new Date(device.createdAt).toLocaleDateString('fr-FR')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onclick={() => confirmUnpair(device.id)}
+                                            >
+                                                Dissocier
+                                            </Button>
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+                        {/if}
+
+                        <Pairing bind:open={showPairingDialog} />
+
+                        {#if deviceToUnpair !== null}
+                            <Dialog.Root open={deviceToUnpair !== null} onOpenChange={(open) => { if (!open) cancelUnpair(); }}>
+                                <Dialog.Content>
+                                    <Dialog.Header>
+                                        <Dialog.Title>Confirmer la dissociation</Dialog.Title>
+                                        <Dialog.Description>
+                                            Êtes-vous sûr de vouloir dissocier cet appareil de votre compte ?
+                                            Cette action ne peut pas être annulée.
+                                        </Dialog.Description>
+                                    </Dialog.Header>
+                                    <Dialog.Footer>
+                                        <Button variant="outline" onclick={cancelUnpair}>Annuler</Button>
+                                        <Button variant="destructive" onclick={unpairDevice}>Dissocier</Button>
+                                    </Dialog.Footer>
+                                </Dialog.Content>
+                            </Dialog.Root>
+                        {/if}
                     </section>
 
                 {:else if selectedSection === 'preferences'}
