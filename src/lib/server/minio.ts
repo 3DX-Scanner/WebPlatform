@@ -1,6 +1,6 @@
 import * as Minio from 'minio';
-import { env } from '$env/dynamic/private';
-import { Readable } from 'stream';
+import {env} from '$env/dynamic/private';
+import {Readable} from 'stream';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -17,7 +17,7 @@ export const minioClient = new Minio.Client(minioConfig);
 export const PUBLIC_BUCKET = 'public';
 
 export async function initializeBuckets() {
-	try {
+    try {
 		const exists = await minioClient.bucketExists(PUBLIC_BUCKET);
 		if (!exists) {
 			await minioClient.makeBucket(PUBLIC_BUCKET, 'us-east-1');
@@ -122,20 +122,20 @@ export async function uploadFile(
 					read() {}
 				});
 
-				(async () => {
-					try {
-						while (true) {
-							const { done, value } = await reader.read();
-							if (done) {
-								(nodeStream as Readable).push(null);
-								break;
-							}
-							(nodeStream as Readable).push(Buffer.from(value));
-						}
-					} catch (err) {
-						(nodeStream as Readable).destroy(err as Error);
-					}
-				})();
+				await (async () => {
+                    try {
+                        while (true) {
+                            const {done, value} = await reader.read();
+                            if (done) {
+                                (nodeStream as Readable).push(null);
+                                break;
+                            }
+                            (nodeStream as Readable).push(Buffer.from(value));
+                        }
+                    } catch (err) {
+                        (nodeStream as Readable).destroy(err as Error);
+                    }
+                })();
 			}
 		}
 
@@ -148,26 +148,6 @@ export async function uploadFile(
 		};
 	} catch (error) {
 		console.error('Erreur lors de l\'upload:', error);
-		throw error;
-	}
-}
-
-export async function downloadFile(bucketName: string, objectName: string) {
-	try {
-		const dataStream = await minioClient.getObject(bucketName, objectName);
-		return dataStream;
-	} catch (error) {
-		console.error('Erreur lors du téléchargement:', error);
-		throw error;
-	}
-}
-
-export async function deleteFile(bucketName: string, objectName: string) {
-	try {
-		await minioClient.removeObject(bucketName, objectName);
-		return { success: true };
-	} catch (error) {
-		console.error('Erreur lors de la suppression:', error);
 		throw error;
 	}
 }
@@ -220,24 +200,9 @@ export async function getPresignedUrl(
 	expirySeconds: number = 3600
 ) {
 	try {
-		const url = await minioClient.presignedGetObject(bucketName, objectName, expirySeconds);
-		return url;
+        return await minioClient.presignedGetObject(bucketName, objectName, expirySeconds);
 	} catch (error) {
 		console.error('Erreur lors de la génération de l\'URL présignée:', error);
-		throw error;
-	}
-}
-
-export async function getPresignedUploadUrl(
-	bucketName: string,
-	objectName: string,
-	expirySeconds: number = 3600
-) {
-	try {
-		const url = await minioClient.presignedPutObject(bucketName, objectName, expirySeconds);
-		return url;
-	} catch (error) {
-		console.error('Erreur lors de la génération de l\'URL présignée d\'upload:', error);
 		throw error;
 	}
 }

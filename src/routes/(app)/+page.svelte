@@ -16,7 +16,7 @@
                 </h1>
                 
                 <p class="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground leading-relaxed font-light">
-                    Transformez vos objets physiques en <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 font-semibold">modèles 3D</span> de haute précision avec une technologie de scan performante
+                    Transformez vos objets physiques en modèles 3D en quelques minutes
                 </p>
                 
                 <div class="flex flex-wrap gap-4 pt-4 justify-center lg:justify-start">
@@ -36,9 +36,9 @@
             </div>
 
             <!-- Right side: 3D Model Viewer -->
-            <div class="w-full lg:w-2/3 flex justify-end items-start relative pr-8 sm:pr-12 lg:pr-16">
-                <Scanner3DViewerComponent />
-            </div>
+<!--            <div class="w-full lg:w-2/3 flex justify-end items-start relative pr-8 sm:pr-12 lg:pr-16">-->
+<!--                <Scanner3DViewerComponent />-->
+<!--            </div>-->
         </div>
 
         <!-- Scroll down arrow -->

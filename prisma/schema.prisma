@@ -22,7 +22,7 @@ model User {
   bucketName      String?          @unique
   createdAt       DateTime         @default(now())
   devices         UserDevice[]
-  modelLikes      ModelLike[]
+  modelLikes      UserModel[]
   pairingSessions PairingSession[]
 }
 
@@ -66,13 +66,13 @@ model PairingSession {
   @@index([status])
 }
 
-model ModelLike {
+model UserModel {
   id        Int      @id @default(autoincrement())
   userId    Int
-  modelId   String // Identifiant du modèle (bucketName/folderName)
+  modelPath String // Chemin du modèle (bucketName/folderName)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, modelId])
-  @@index([modelId])
+  @@unique([userId, modelPath])
+  @@index([modelPath])
 }

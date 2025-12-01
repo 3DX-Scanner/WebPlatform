@@ -48,17 +48,26 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 		const allModels: Model3D[] = [];
 
-		// Pour chaque bucket autorisé, lister les modèles
-		for (const bucketName of bucketsToLoad) {
-			// Vérifier que le bucket existe
-			const bucketExists = await minioClient.bucketExists(bucketName);
-			if (!bucketExists) {
-				console.log(`⚠️  Le bucket ${bucketName} n'existe pas, ignoré`);
+		// Process buckets in parallel for better performance
+		const bucketResults = await Promise.all(
+			bucketsToLoad.map(async (bucketName) => {
+				try {
+					const files = await listFiles(bucketName);
+					return { bucketName, files, error: null };
+				} catch (error) {
+					console.log(`⚠️  Le bucket ${bucketName} n'existe pas ou erreur: ${error}`);
+					return { bucketName, files: [], error };
+				}
+			})
+		);
+
+		// Process results from each bucket
+		for (const { bucketName, files, error } of bucketResults) {
+			if (error || files.length === 0) {
 				continue;
 			}
 
 			try {
-				const files = await listFiles(bucketName);
 				console.log(`📁 Bucket ${bucketName}: ${files.length} fichiers trouvés`);
 				
 				// Regrouper les fichiers par dossier (modèle)

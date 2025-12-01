@@ -6,11 +6,14 @@ import { initializeBuckets, syncStaticModelsToMinio } from '$lib/server/minio';
 let minioInitialized = false;
 
 if (!minioInitialized) {
+	minioInitialized = true; // Set flag FIRST to prevent re-entry
 	initializeBuckets()
-		.then(async () => {
+		.then(() => {
 			console.log('MinIO initialisé avec succès');
-			await syncStaticModelsToMinio();
-			minioInitialized = true;
+			// Fire and forget - don't await, let it sync in background
+			syncStaticModelsToMinio().catch((err) => {
+				console.error('Erreur lors de la synchronisation des modèles:', err);
+			});
 		})
 		.catch((err) => {
 			console.error('Erreur lors de l\'initialisation de MinIO:', err);
