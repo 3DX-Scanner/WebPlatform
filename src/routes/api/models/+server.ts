@@ -143,10 +143,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 				
 				try {
 					const modelIds = bucketModels.map(m => m.id);
-					// @ts-ignore - Le modèle ModelLike sera disponible après la génération du client Prisma
-					const likes = await prisma.modelLike.findMany({
+					const likes = await prisma.userModel.findMany({
 						where: {
-							modelId: { in: modelIds }
+							modelPath: { in: modelIds }
 						}
 					});
 
@@ -155,12 +154,12 @@ export const GET: RequestHandler = async ({ locals }) => {
 					const userLikes = new Set<string>();
 					
 					for (const like of likes) {
-						const count = likesByModel.get(like.modelId) || 0;
-						likesByModel.set(like.modelId, count + 1);
+						const count = likesByModel.get(like.modelPath) || 0;
+						likesByModel.set(like.modelPath, count + 1);
 						
 						// Vérifier si l'utilisateur connecté a liké ce modèle
 						if (locals.user && like.userId === locals.user.id) {
-							userLikes.add(like.modelId);
+							userLikes.add(like.modelPath);
 						}
 					}
 

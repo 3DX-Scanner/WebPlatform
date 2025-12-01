@@ -122,8 +122,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		// Récupérer le nombre de modèles likés par l'utilisateur
 		let likedModelsCount = 0;
 		try {
-			// @ts-ignore - Le modèle ModelLike sera disponible après la génération du client Prisma
-			likedModelsCount = await prisma.modelLike.count({
+			likedModelsCount = await prisma.userModel.count({
 				where: { userId: userId }
 			});
 		} catch (error) {
