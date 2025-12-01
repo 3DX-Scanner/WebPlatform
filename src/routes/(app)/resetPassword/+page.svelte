@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	let newPassword = '';
-	let error = '';
-	let loading = true;
+	let newPassword = $state('');
+	let error = $state('');
+	let loading = $state(false);
 
 	onMount(async () => {
 		const params = new URLSearchParams(window.location.search);

@@ -6,5 +6,3 @@ export const load: LayoutServerLoad = async ({ locals, depends }) => {
         isAuthenticated: Boolean(locals.user)
     };
 };
-
-

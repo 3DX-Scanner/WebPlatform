@@ -1,5 +1,6 @@
 <script lang="ts">
-    import CardComponent from '$lib/components/Card/CardComponent.svelte';
+    import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+    import { Badge } from '$lib/components/ui/badge';
 
     let { 
         model,
@@ -29,7 +30,7 @@
         onClick?: () => void;
         onEdit?: () => void;
         onDelete?: () => void;
-        onLike?: () => void;
+        onLike?: (modelId: string | number, liked: boolean, likeCount: number) => void;
         isSelected?: boolean;
         showMenu?: boolean;
         isAuthenticated?: boolean;
@@ -114,7 +115,8 @@
             // Mettre à jour avec les vraies valeurs
             isLiked = data.liked;
             likesCount = data.likeCount;
-            onLike();
+            // Notifier le parent avec les nouvelles valeurs
+            onLike(model.id, data.liked, data.likeCount);
         } catch (error: any) {
             console.error('Erreur lors du like:', error);
             // Revert optimistic update
@@ -158,10 +160,10 @@
     });
 </script>
 
-<div 
-    class="relative cursor-pointer transition-all duration-300 rounded-2xl outline-none overflow-hidden bg-white dark:bg-gray-800 {isSelected ? 'shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] ring-4 ring-blue-500/30 dark:ring-blue-400/30 scale-[1.02] -translate-y-2' : 'shadow-lg hover:shadow-xl hover:-translate-y-1'} focus:outline-2 focus:outline-blue-500 dark:focus:outline-blue-400 focus:outline-offset-2 active:translate-y-0"
+<Card
+    class="relative cursor-pointer transition-all duration-300 overflow-hidden hover:shadow-xl hover:-translate-y-1 focus:outline-2 focus:outline-blue-500 dark:focus:outline-blue-400 focus:outline-offset-2 active:translate-y-0 p-0 {isSelected ? 'ring-4 ring-blue-500/30 dark:ring-blue-400/30 scale-[1.02] -translate-y-2' : ''}"
     role="button"
-    tabindex="0"
+    tabindex={0}
     onclick={handleClick}
     onkeydown={handleKeydown}
     aria-label={`Voir le modèle ${model.title}`}
@@ -184,12 +186,12 @@
             
             {#if menuOpen}
                 <div 
-                    class="absolute right-0 bottom-full mb-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20"
+                    class="absolute right-0 bottom-full mb-2 w-40 bg-card rounded-lg shadow-lg border border-border py-1 z-20"
                     role="menu"
                     aria-orientation="vertical"
                 >
                     <button
-                        class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        class="w-full text-left px-4 py-2 text-sm text-card-foreground hover:bg-accent transition-colors flex items-center gap-2"
                         onclick={handleEdit}
                         type="button"
                         role="menuitem"
@@ -200,7 +202,7 @@
                         Modifier
                     </button>
                     <button
-                        class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        class="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-accent transition-colors flex items-center gap-2"
                         onclick={handleDelete}
                         type="button"
                         role="menuitem"
@@ -215,17 +217,22 @@
         </div>
     {/if}
     
-    <CardComponent
-        title={model.title}
-        subtitle={model.subtitle}
-        content=""
-        image={model.image}
-        elevation="none"
-        variant="default"
-        padding="none"
-    >
-        {#snippet title$extra()}
-            <div class="flex items-center gap-2">
+    {#if model.image}
+        <div class="card-image h-48 w-full overflow-hidden">
+            <img
+                src={model.image}
+                alt={model.title}
+                loading="lazy"
+                decoding="async"
+                class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+        </div>
+    {/if}
+
+    <CardHeader class="p-4">
+        <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-1">
+                <CardTitle class="text-lg line-clamp-2">{model.title}</CardTitle>
                 <span class="inline-block px-2 py-1 text-xs font-medium rounded-full {model.isPublic ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'}">
                     {model.isPublic ? 'Public' : 'Privé'}
                 </span>
@@ -248,6 +255,9 @@
                     </button>
                 {/if}
             </div>
-        {/snippet}
-    </CardComponent>
-</div>
+        </div>
+        {#if model.subtitle}
+            <p class="text-sm text-muted-foreground line-clamp-1">{model.subtitle}</p>
+        {/if}
+    </CardHeader>
+</Card>

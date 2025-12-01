@@ -3,16 +3,17 @@
     import { afterNavigate } from '$app/navigation';
     import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
-    import EmptyStateComponent from '$lib/components/EmptyState/EmptyStateComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
     import ImportModelPopupComponent from '$lib/components/ImportModelPopup/ImportModelPopupComponent.svelte';
     import EditModelPopupComponent from '$lib/components/EditModelPopup/EditModelPopupComponent.svelte';
     import ConfirmDialogComponent from '$lib/components/ConfirmDialog/ConfirmDialogComponent.svelte';
+    import {EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle, Root} from "$lib/components/ui/empty";
+    import {Button} from "$lib/components/ui/button";
 
     let { data } = $props();
     let isAuthenticated = data?.isAuthenticated ?? false;
     let searchQuery = $state('');
-    let selectedCategory = $state('');
+    let selectedCategories = $state<string[]>([]);
     let sortBy = $state('');
     let pageKey = $state(0);
     let isLoading = $state(true);
@@ -40,7 +41,7 @@
         
         try {
             const response = await fetch('/api/models', {
-                credentials: 'include' // Inclure les cookies pour l'authentification
+                credentials: 'include'
             });
             const data = await response.json();
             
@@ -51,9 +52,9 @@
             models = data.models || [];
             isLoading = false;
         } catch (error) {
-            console.error('Erreur lors du chargement des modèles:', error);
             loadError = 'Impossible de charger les modèles. Veuillez réessayer plus tard.';
             isLoading = false;
+            return;
         }
     }
 
@@ -64,8 +65,9 @@
             category: '',
             modelPath: ''
         };
+
         searchQuery = '';
-        selectedCategory = '';
+        selectedCategories = [];
         sortBy = '';
         pageKey++;
     }
@@ -78,7 +80,7 @@
         resetPageState();
     });
 
-    function filterAndSortModels(list: typeof models, search: string, categoryFilter: string, sort: string) {
+    function filterAndSortModels(list: typeof models, search: string, categoryFilters: string[], sort: string) {
         const normalize = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
         const q = normalize(search.trim());
 
@@ -89,7 +91,21 @@
             const category = normalize(model.category);
 
             const matchesSearch = q === '' || title.includes(q) || subtitle.includes(q) || content.includes(q) || category.includes(q);
-            const matchesCategory = !categoryFilter || model.category === categoryFilter;
+            
+            let matchesCategory = true;
+            if (categoryFilters.length > 0) {
+                matchesCategory = categoryFilters.some(filter => {
+                    if (filter === 'public') {
+                        return model.isPublic === true;
+                    } else if (filter === 'privé') {
+                        return model.isPublic === false;
+                    } else if (filter === 'likés') {
+                        return model.isLiked === true;
+                    }
+                    return false;
+                });
+            }
+            
             return matchesSearch && matchesCategory;
         });
 
@@ -104,20 +120,26 @@
         return filtered;
     }
 
-    let filteredModels = $derived(filterAndSortModels(models, searchQuery, selectedCategory, sortBy));
-    let categories = $derived(Array.from(new Set(models.map((m) => m.category))).sort());
+    let filteredModels = $derived(filterAndSortModels(models, searchQuery, selectedCategories, sortBy));
 
     function handleSearchChange(value: string) {
         searchQuery = value;
     }
 
-    function handleCategoryChange(value: string) {
-        selectedCategory = value;
+    function handleCategoryChange(value: string[]) {
+        selectedCategories = value;
     }
 
-    function handleSortChange(event: Event) {
-        const target = event.target as HTMLSelectElement;
-        sortBy = target.value;
+    function handleModelLike(modelId: string | number, liked: boolean, likeCount: number) {
+        const modelIndex = models.findIndex(m => m.id === modelId);
+        if (modelIndex !== -1) {
+            const model = models[modelIndex];
+            if (model.isLiked !== liked || model.likes !== likeCount) {
+                model.isLiked = liked;
+                model.likes = likeCount;
+                models = models;
+            }
+        }
     }
 
     function openModelPopup(model: any) {
@@ -153,8 +175,8 @@
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Erreur lors du téléchargement:', error);
             alert('Erreur lors du téléchargement du modèle. Vérifiez que le fichier existe.');
+            return;
         }
     }
 
@@ -171,7 +193,6 @@
     }
 
     function handleModelUploaded() {
-        // Recharger les modèles après l'upload
         loadModels();
     }
 
@@ -190,7 +211,6 @@
     }
 
     function handleModelUpdated() {
-        // Recharger les modèles après la modification
         loadModels();
     }
 
@@ -205,10 +225,8 @@
         const model = selectedModelForDelete;
         const folderName = model.id.split('/').slice(1).join('/');
         
-        // Fermer la popup
         deleteConfirmOpen = false;
         
-        // Effectuer la suppression
         performDelete(model, folderName);
         
         selectedModelForDelete = null;
@@ -239,56 +257,56 @@
                 throw new Error(data.error || 'Erreur lors de la suppression');
             }
 
-            // Recharger les modèles après la suppression
             loadModels();
         } catch (error: any) {
-            console.error('Erreur lors de la suppression:', error);
             alert(error.message || 'Erreur lors de la suppression du modèle. Veuillez réessayer.');
         }
     }
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-background">
 
     <section class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {#if isLoading}
-            <!-- Skeleton Loader -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {#each Array(10) as _}
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden animate-pulse">
-                        <!-- Image skeleton -->
-                        <div class="w-full h-48 bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="bg-card rounded-2xl shadow-lg overflow-hidden animate-pulse">
+                        <div class="w-full h-48 bg-muted"></div>
                         
-                        <!-- Content skeleton -->
                         <div class="p-4 space-y-3">
-                            <!-- Badge skeleton -->
                             <div class="flex items-center gap-2">
-                                <div class="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                                <div class="h-5 w-16 bg-muted rounded-full"></div>
                             </div>
                             
-                            <!-- Title skeleton -->
-                            <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                            <div class="h-6 bg-muted rounded w-3/4"></div>
                             
-                            <!-- Subtitle skeleton -->
-                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                            <div class="h-4 bg-muted rounded w-1/2"></div>
                         </div>
                     </div>
                 {/each}
             </div>
         {:else if loadError}
-            <EmptyStateComponent 
-                icon="❌"
-                title="Erreur de chargement"
-                description={loadError}
-            />
+            <Root>
+                <EmptyHeader>
+                    <EmptyTitle>Erreur de chargement</EmptyTitle>
+                    <EmptyDescription>
+                        {loadError}
+                    </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                    <Button onclick={() => { window.location.reload(); } }>
+                        Réessayer
+                    </Button>
+                </EmptyContent>
+            </Root>
         {:else}
             <ModelFiltersComponent 
                 {searchQuery}
-                {selectedCategory}
-                {categories}
+                selectedCategories={selectedCategories}
+                {isAuthenticated}
                 onSearchChange={handleSearchChange}
                 onCategoryChange={handleCategoryChange}
-                on:openImport={handleOpenImport}
+                onOpenImport={handleOpenImport}
             />
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -301,17 +319,18 @@
                         {isAuthenticated}
                         onEdit={() => handleEditModel(model)}
                         onDelete={() => handleDeleteModel(model)}
-                        onLike={() => {}}
+                        onLike={handleModelLike}
                     />
                 {/each}
             </div>
             
             {#if filteredModels.length === 0}
-                <EmptyStateComponent 
-                    icon="🔍"
-                    title="Aucun modèle trouvé"
-                    description="Essayez de modifier vos critères de recherche"
-                />
+                <Root>
+                    <EmptyHeader>
+                        <EmptyTitle>Aucun modèle trouvé</EmptyTitle>
+                        <EmptyDescription>Essayez de modifier vos critères de recherche</EmptyDescription>
+                    </EmptyHeader>
+                </Root>
             {/if}
         {/if}
     </section>
@@ -321,14 +340,14 @@
         title={currentPopup.title}
         category={currentPopup.category}
         modelPath={currentPopup.modelPath}
-        on:close={closePopup}
-        on:download={downloadModel}
+        onclose={closePopup}
+        ondownload={downloadModel}
     />
 
     <ImportModelPopupComponent
         isOpen={importPopupOpen}
-        on:close={handleCloseImport}
-        on:uploaded={handleModelUploaded}
+        onclose={handleCloseImport}
+        onuploaded={handleModelUploaded}
     />
 
     <EditModelPopupComponent

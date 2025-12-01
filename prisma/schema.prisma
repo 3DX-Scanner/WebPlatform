@@ -8,17 +8,22 @@ generator client {
   binaryTargets = ["native", "windows"]
 }
 
-model User {
-  id         Int          @id @default(autoincrement())
-  email      String
-  username   String
-  password   String
-  bucketName String?      @unique
-  createdAt  DateTime     @default(now())
-  devices    UserDevice[]
-  modelLikes ModelLike[]
+enum PairingStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
 
-  @@unique([email, username])
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  username        String           @unique
+  password        String
+  bucketName      String?          @unique
+  createdAt       DateTime         @default(now())
+  devices         UserDevice[]
+  modelLikes      UserModel[]
+  pairingSessions PairingSession[]
 }
 
 model UserDevice {
@@ -42,18 +47,32 @@ model Device {
 }
 
 model DeviceModel {
-  id      Int      @id @default(autoincrement())
-  name    String   @unique
-  devices Device[]
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  modelNumber String   @unique
+  devices     Device[]
 }
 
-model ModelLike {
+model PairingSession {
+  id                 String        @id @default(uuid())
+  userId             Int
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceSerialNumber String
+  status             PairingStatus @default(PENDING)
+  createdAt          DateTime      @default(now())
+  expiresAt          DateTime
+
+  @@index([userId])
+  @@index([status])
+}
+
+model UserModel {
   id        Int      @id @default(autoincrement())
   userId    Int
-  modelId   String   // Identifiant du modèle (bucketName/folderName)
+  modelPath String // Chemin du modèle (bucketName/folderName)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, modelId])
-  @@index([modelId])
+  @@unique([userId, modelPath])
+  @@index([modelPath])
 }

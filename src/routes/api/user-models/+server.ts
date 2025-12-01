@@ -51,14 +51,16 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 		// Regrouper les fichiers par dossier (modèle)
 		const modelMap = new Map<string, any>();
+		const fileInfos: { file: typeof files[0]; folderName: string; ext: string }[] = [];
 
+		// First pass: collect file info and create model entries
 		for (const file of files) {
 			const parts = file.name.split('/');
 			if (parts.length < 2) continue;
 
 			const folderName = parts[0];
 			const fileName = parts[parts.length - 1];
-			const ext = fileName.split('.').pop()?.toLowerCase();
+			const ext = fileName.split('.').pop()?.toLowerCase() || '';
 
 			if (!modelMap.has(folderName)) {
 				modelMap.set(folderName, {
@@ -77,10 +79,19 @@ export const GET: RequestHandler = async ({ locals }) => {
 				});
 			}
 
-			const model = modelMap.get(folderName);
+			fileInfos.push({ file, folderName, ext });
+		}
 
-			// Générer une URL présignée pour accéder au fichier privé (valide 1 heure)
-			const presignedUrl = await getPresignedUrl(userBucket, file.name, 3600);
+		// Generate all presigned URLs in parallel
+		const presignedUrls = await Promise.all(
+			fileInfos.map(({ file }) => getPresignedUrl(userBucket, file.name, 3600))
+		);
+
+		// Second pass: assign URLs to models
+		for (let i = 0; i < fileInfos.length; i++) {
+			const { folderName, ext } = fileInfos[i];
+			const presignedUrl = presignedUrls[i];
+			const model = modelMap.get(folderName);
 
 			if (ext === 'glb' || ext === 'gltf') {
 				model.modelPath = presignedUrl;
@@ -111,8 +122,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		// Récupérer le nombre de modèles likés par l'utilisateur
 		let likedModelsCount = 0;
 		try {
-			// @ts-ignore - Le modèle ModelLike sera disponible après la génération du client Prisma
-			likedModelsCount = await prisma.modelLike.count({
+			likedModelsCount = await prisma.userModel.count({
 				where: { userId: userId }
 			});
 		} catch (error) {

@@ -4,7 +4,6 @@ import { prisma } from '$lib/server/prisma';
 import bcrypt from 'bcryptjs';
 import { verifyJwtFromCookies } from '$lib/server/jwtVerify';
 
-
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
 		const payload = verifyJwtFromCookies(cookies);
@@ -23,7 +22,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		const user = await prisma.user.findUnique({
-			where: { id: payload.id },
+			where: { id: Number(payload.id) },
 			select: { password: true, email: true }
 		});
 
@@ -31,7 +30,6 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			return json({ error: 'Utilisateur introuvable.' }, { status: 404 });
 		}
 
-		// Bloquer le changement de mot de passe pour les utilisateurs Google OAuth
 		if (user.password === '') {
 			return json({ 
 				error: 'Impossible de changer le mot de passe. Votre compte est géré par Google OAuth.' 
@@ -48,7 +46,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const hashed = await bcrypt.hash(newPassword, 10);
 
 		await prisma.user.update({
-			where: { id: payload.id },
+			where: { id: Number(payload.id) },
 			data: { password: hashed }
 		});
 

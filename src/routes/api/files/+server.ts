@@ -10,7 +10,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	try {
 		// Créer le bucket de l'utilisateur s'il n'existe pas
-		const userBucket = await ensureUserBucket(locals.user.id);
+		const userBucket = await ensureUserBucket(locals.user.id, locals.user.username);
 		const prefix = url.searchParams.get('prefix') || ''; // Préfixe optionnel
 
 		const files = await listFiles(userBucket, prefix);
