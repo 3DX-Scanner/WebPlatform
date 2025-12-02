@@ -113,10 +113,10 @@
                 stopPolling();
             } else if (data.status === 'expired') {
                 stopPolling();
-                error = 'Pairing session expired. Please try again.';
+                error = 'La session a expirée. Veuillez réessayer.';
             }
         } catch (err) {
-            console.error('Error checking pairing status:', err);
+            console.error('Erreur :', err);
         }
     }
 
@@ -126,7 +126,7 @@
 </script>
 
 <Dialog.Root bind:open={open}>
-    <Dialog.Content class="sm:max-w-[500px] [&>button]:hidden" onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog.Content class="sm:max-w-[500px] {showQrCode && !pairingSuccess ? '[&>button]:hidden' : ''}" onInteractOutside={(e) => e.preventDefault()}>
         {#if !showQrCode}
             <!-- Step 1: Enter WiFi credentials -->
             <Dialog.Header>
