@@ -7,7 +7,7 @@
     import QRCode from 'qrcode';
     import {Spinner} from "$lib/components/ui/spinner";
     import {Badge} from "$lib/components/ui/badge";
-    import {onDestroy} from "svelte";
+    import {onDestroy, tick} from "svelte";
 
     let {open = $bindable()} = $props();
 
@@ -38,45 +38,41 @@
     });
 
     async function generateQRCode() {
-        try {
-            error = null;
+        error = null;
 
-            // Create pairing session
-            const response = await fetch('/api/pairing/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to create pairing session');
+        // Create pairing session
+        const response = await fetch('/api/pairing/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             }
+        });
 
-            const data = await response.json();
-            pairingId = data.pairingId;
-
-            // Generate QR code with WiFi credentials and pairing ID
-            await QRCode.toCanvas(qrCodeCanvas, JSON.stringify({
-                ssid: ssid,
-                password: password,
-                pairingId: pairingId,
-                apiEndpoint: window.location.origin + '/api/pairing/complete'
-            }), {
-                width: 300,
-                margin: 2,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
-                }
-            });
-
-            showQrCode = true;
-            startPolling();
-        } catch (err) {
-            console.error('Error generating QR code:', err);
-            error = 'Failed to generate pairing code. Please try again.';
+        if (!response.ok) {
+            throw new Error('Failed to create pairing session');
         }
+
+        const data = await response.json();
+        pairingId = data.pairingId;
+
+        showQrCode = true;
+        await tick();
+
+        await QRCode.toCanvas(qrCodeCanvas, JSON.stringify({
+            ssid: ssid,
+            password: password,
+            pairingId: pairingId,
+        }), {
+            width: 300,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        });
+
+
+        startPolling();
     }
 
     function startPolling() {
@@ -164,6 +160,16 @@
                 </Dialog.Description>
             </Dialog.Header>
             <div class="flex flex-col items-center gap-4 py-4">
+                {#if error}
+                    <Badge variant="destructive">
+                        {error}
+                    </Badge>
+                {:else}
+                    <Badge variant="secondary">
+                        <Spinner />
+                        En attente de connexion de l'appareil...
+                    </Badge>
+                {/if}
                 <canvas bind:this={qrCodeCanvas} class="w-[300px] h-[300px]"></canvas>
                 {#if pairingId}
                     <div class="text-center">
@@ -171,16 +177,15 @@
                         <p class="text-xs font-mono bg-muted px-3 py-2 rounded">{pairingId}</p>
                     </div>
                 {/if}
-                {#if error}
-                    <div class="text-red-500 text-sm">{error}</div>
-                {/if}
             </div>
-            <Dialog.Footer>
-                <Badge variant="secondary">
-                    <Spinner />
-                    En attente de connexion de l'appareil...
-                </Badge>
-            </Dialog.Footer>
+            {#if error}
+                <Dialog.Footer class="justify-center">
+                    <div class="flex gap-2">
+                        <Button variant="outline" onclick={handleClose}>Fermer</Button>
+                        <Button onclick={generateQRCode}>Réessayer</Button>
+                    </div>
+                </Dialog.Footer>
+            {/if}
         {:else}
             <!-- Step 3: Pairing successful -->
             <Dialog.Header>
