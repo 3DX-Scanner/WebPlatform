@@ -107,7 +107,7 @@
                 </ul>
                 <Button
                     variant="outline"
-                    href="/signup"
+                    href="/subscription"
                 >
                     Commencer
                 </Button>
@@ -124,7 +124,7 @@
                 </ul>
                 <Button
                     variant="default"
-                    href="/signup"
+                    href="/subscription"
                 >
                     Commencer
                 </Button>
@@ -150,32 +150,10 @@
 </div>
 
 <style>
-    /* ===== HERO SECTION ===== */
     .hero-section {
         position: relative;
     }
 
-    /* Hero Gradient Text */
-    .hero-gradient-text {
-        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 25%, #8b5cf6 50%, #ec4899 75%, #06b6d4 100%);
-        background-size: 300% 300%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: gradient-shift 8s ease infinite;
-        filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.5));
-    }
-
-    @keyframes gradient-shift {
-        0%, 100% {
-            background-position: 0% 50%;
-        }
-        50% {
-            background-position: 100% 50%;
-        }
-    }
-
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 1280px) {
         .hero-gradient-text {
             font-size: clamp(2.5rem, 8vw, 4rem);

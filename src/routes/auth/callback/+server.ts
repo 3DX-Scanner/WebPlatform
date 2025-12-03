@@ -164,8 +164,13 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	});
 
 	console.log('✅ Cookie JWT défini pour:', userInfo.email);
-	console.log('✅ Authentification Google réussie, redirection vers /profile');
 
-	// 8️⃣ Rediriger vers le profil
-	throw redirect(302, '/profile');
+	// 8️⃣ Récupérer l'URL de redirection depuis le cookie
+	const redirectUrl = cookies.get('auth_redirect') || '/profile';
+	
+	// Supprimer le cookie de redirection
+	cookies.delete('auth_redirect', { path: '/' });
+	
+	console.log('Authentification Google réussie, redirection vers:', redirectUrl);
+	throw redirect(302, redirectUrl);
 };

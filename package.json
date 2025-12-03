@@ -48,6 +48,7 @@
 		"@smui/notched-outline": "^8.0.0-beta.3",
 		"@smui/ripple": "^8.0.0-beta.3",
 		"@tailwindcss/vite": "^4.1.14",
+		"@types/nodemailer": "^7.0.4",
 		"@types/three": "^0.177.0",
 		"bcrypt": "^6.0.0",
 		"bcryptjs": "^3.0.2",
@@ -58,8 +59,10 @@
 		"lucide-svelte": "^0.554.0",
 		"minio": "^8.0.6",
 		"mode-watcher": "^1.1.0",
+		"nodemailer": "^7.0.11",
 		"qrcode": "^1.5.4",
 		"resend": "^6.1.2",
+		"stripe": "^20.0.0",
 		"three": "^0.177.0"
 	}
 }

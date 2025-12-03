@@ -119,25 +119,54 @@ export const GET: RequestHandler = async ({ locals }) => {
 			totalStorageUsed += file.size || 0;
 		}
 
-		// Récupérer le nombre de modèles likés par l'utilisateur
+		// Récupérer le nombre de modèles likés par l'utilisateur (seulement ceux avec liked = true)
 		let likedModelsCount = 0;
 		try {
-			likedModelsCount = await prisma.userModel.count({
-				where: { userId: userId }
+			// @ts-ignore - Le modèle Model sera disponible après la génération du client Prisma
+			likedModelsCount = await prisma.model.count({
+				where: { 
+					userId: userId,
+					liked: true
+				}
 			});
 		} catch (error) {
 			console.warn('⚠️  Impossible de compter les likes (table peut-être non créée):', error);
 		}
 
+		// Récupérer l'abonnement de l'utilisateur pour obtenir la limite de stockage
+		let storageLimitBytes = 1024 * 1024 * 1024; // Par défaut 1 Go (plan gratuit)
+		let storageLimitMB = 1024;
+		
+		try {
+			const subscription = await prisma.subscription.findUnique({
+				where: { userId: userId },
+				include: {
+					plan: true
+				}
+			});
+			
+			if (subscription && subscription.isActive) {
+				// Convertir la limite de stockage de MB en bytes
+				storageLimitBytes = Number(subscription.plan.storageLimit) * 1024 * 1024;
+				storageLimitMB = Number(subscription.plan.storageLimit);
+			}
+		} catch (error) {
+			console.warn('⚠️  Impossible de récupérer l\'abonnement (utilisation de la limite par défaut):', error);
+		}
+
+		const storageUsedMB = totalStorageUsed / (1024 * 1024);
+		const storageLimitGB = storageLimitMB / 1024;
+		
 		const stats = {
 			bucketName: userBucket,
 			totalModels: userModels.length,
 			likedModelsCount: likedModelsCount,
 			storageUsed: totalStorageUsed,
-			storageLimit: 1024 * 1024 * 1024, // 1 Go en bytes
-			storageUsedMB: (totalStorageUsed / (1024 * 1024)).toFixed(2),
-			storageLimitMB: 1024,
-			storagePercentage: ((totalStorageUsed / (1024 * 1024 * 1024)) * 100).toFixed(1)
+			storageLimit: storageLimitBytes,
+			storageUsedMB: storageUsedMB,
+			storageLimitMB: storageLimitMB,
+			storageLimitGB: storageLimitGB,
+			storagePercentage: ((totalStorageUsed / storageLimitBytes) * 100).toFixed(1)
 		};
 
 		console.log(`✅ ${userModels.length} modèles trouvés pour l'utilisateur ${userId}`);

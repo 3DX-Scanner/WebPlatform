@@ -56,6 +56,43 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			return json({ error: 'Fichier trop volumineux (max 100MB)' }, { status: 400 });
 		}
 
+		// Vérifier la limite de stockage du plan de l'utilisateur
+		let storageLimitBytes = 1024 * 1024 * 1024; // Par défaut 1 Go (plan gratuit)
+		
+		try {
+			const subscription = await prisma.subscription.findUnique({
+				where: { userId: locals.user.id },
+				include: {
+					plan: true
+				}
+			});
+			
+			if (subscription && subscription.isActive) {
+				// Convertir la limite de stockage de MB en bytes
+				storageLimitBytes = Number(subscription.plan.storageLimit) * 1024 * 1024;
+			}
+		} catch (error) {
+			console.warn('⚠️  Impossible de récupérer l\'abonnement:', error);
+		}
+
+		// Calculer le stockage utilisé actuel
+		const { listFiles } = await import('$lib/server/minio');
+		const existingFiles = await listFiles(bucketName);
+		let totalStorageUsed = 0;
+		for (const file of existingFiles) {
+			totalStorageUsed += file.size || 0;
+		}
+
+		// Vérifier si l'upload dépasserait la limite
+		const totalAfterUpload = totalStorageUsed + file.size;
+		if (totalAfterUpload > storageLimitBytes) {
+			const storageLimitMB = storageLimitBytes / (1024 * 1024);
+			const usedMB = (totalStorageUsed / (1024 * 1024)).toFixed(2);
+			return json({ 
+				error: `Limite de stockage atteinte. Vous utilisez ${usedMB} MB sur ${storageLimitMB} MB disponibles. Veuillez passer à un plan supérieur.` 
+			}, { status: 403 });
+		}
+
 		// Générer un nom unique pour le fichier
 		const timestamp = Date.now();
 		const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');

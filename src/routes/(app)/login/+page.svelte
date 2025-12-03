@@ -5,14 +5,28 @@
     import GoogleButtonComponent from '$lib/components/Button/GoogleButtonComponent.svelte';
     import { onMount } from 'svelte';
     import { goto, invalidate } from '$app/navigation';
+    import { page } from '$app/stores';
 
     let email = '';
     let password = '';
     let error = '';
+    let redirectUrl = '/profile';
+
+    let message = '';
 
     onMount(() => {
         const params = new URLSearchParams(window.location.search);
         const errorParam = params.get('error');
+        const redirectParam = params.get('redirect');
+        const messageParam = params.get('message');
+        
+        if (redirectParam) {
+            redirectUrl = decodeURIComponent(redirectParam);
+        }
+        
+        if (messageParam) {
+            message = decodeURIComponent(messageParam);
+        }
         
         if (errorParam) {
             const errorMessages: Record<string, string> = {
@@ -40,7 +54,8 @@
 
             if (res.ok) {
                 await invalidate('auth:session');
-                await goto('/profile', { invalidateAll: true });
+                // Utiliser l'URL de redirection si elle existe, sinon /profile
+                await goto(redirectUrl, { invalidateAll: true });
             } else {
                 const data = await res.json();
                 error = data.error || data.message || 'Erreur lors de la connexion';
@@ -54,7 +69,12 @@
 
     async function handleGoogleLogin() {
         try {
-            window.location.href = '/api/auth/google';
+            // Passer le paramètre redirect à l'API Google
+            const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+            const googleUrl = redirectParam 
+                ? `/api/auth/google?redirect=${encodeURIComponent(redirectParam)}`
+                : '/api/auth/google';
+            window.location.href = googleUrl;
         } catch (e) {
             error = 'Erreur lors de la connexion avec Google';
         }
@@ -64,6 +84,9 @@
 <div class="min-h-screen flex items-center justify-center bg-muted px-4">
     <div class="bg-card p-12 rounded-2xl shadow-lg min-w-[400px] max-w-[90vw] flex flex-col items-stretch">
         <h1 class="text-center mb-10 text-3xl font-bold text-card-foreground">Connexion</h1>
+        {#if message}
+            <div class="text-primary bg-primary/10 rounded-md p-3 mb-4 text-center">{message}</div>
+        {/if}
         {#if error}
             <div class="text-destructive bg-destructive/10 rounded-md p-3 mb-4 text-center">{error}</div>
         {/if}

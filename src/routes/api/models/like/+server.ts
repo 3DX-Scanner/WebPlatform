@@ -13,37 +13,56 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 
 	try {
-		const { modelId: modelPath } = await request.json();
+		const { modelId } = await request.json();
 
-		if (!modelPath || typeof modelPath !== 'string') {
+		if (!modelId || typeof modelId !== 'string') {
 			return json({ error: 'modelId est requis' }, { status: 400 });
 		}
 
-		// Vérifier si le like existe déjà
-		const existingLike = await prisma.userModel.findUnique({
+		// Vérifier si le modèle existe déjà pour cet utilisateur
+		const existingModel = await prisma.model.findUnique({
 			where: {
-				userId_modelPath: {
+				userId_modelId: {
 					userId: locals.user.id,
-					modelPath: modelPath
+					modelId: modelId
 				}
 			}
 		});
 
-		if (existingLike) {
-			return json({ error: 'Le modèle est déjà liké' }, { status: 400 });
+		if (existingModel) {
+			// Si l'entrée existe déjà, mettre à jour le champ liked
+			if (existingModel.liked) {
+				return json({ error: 'Le modèle est déjà liké' }, { status: 400 });
+			}
+			// Mettre à jour liked à true
+			await prisma.model.update({
+				where: {
+					userId_modelId: {
+						userId: locals.user.id,
+						modelId: modelId
+					}
+				},
+				data: {
+					liked: true
+				}
+			});
+		} else {
+			// Créer une nouvelle entrée avec liked = true
+			await prisma.model.create({
+				data: {
+					userId: locals.user.id,
+					modelId: modelId,
+					liked: true
+				}
+			});
 		}
 
-		// Créer le like
-		const like = await prisma.userModel.create({
-			data: {
-				userId: locals.user.id,
-				modelPath: modelPath
+		// Compter le nombre total de likes pour ce modèle (seulement ceux avec liked = true)
+		const likeCount = await prisma.model.count({
+			where: { 
+				modelId: modelId,
+				liked: true
 			}
-		});
-
-		// Compter le nombre total de likes pour ce modèle
-		const likeCount = await prisma.userModel.count({
-			where: { modelPath: modelPath }
 		});
 
 		return json({ 
@@ -69,17 +88,37 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			return json({ error: 'modelId est requis' }, { status: 400 });
 		}
 
-		// Supprimer le like
-		await prisma.userModel.deleteMany({
+		// Mettre à jour le champ liked à false au lieu de supprimer
+		const existingModel = await prisma.model.findUnique({
 			where: {
-				userId: locals.user.id,
-				modelPath: modelId
+				userId_modelId: {
+					userId: locals.user.id,
+					modelId: modelId
+				}
 			}
 		});
 
-		// Compter le nombre total de likes pour ce modèle
-		const likeCount = await prisma.userModel.count({
-			where: { modelPath: modelId }
+		if (existingModel) {
+			// Mettre à jour liked à false
+			await prisma.model.update({
+				where: {
+					userId_modelId: {
+						userId: locals.user.id,
+						modelId: modelId
+					}
+				},
+				data: {
+					liked: false
+				}
+			});
+		}
+
+		// Compter le nombre total de likes pour ce modèle (seulement ceux avec liked = true)
+		const likeCount = await prisma.model.count({
+			where: { 
+				modelId: modelId,
+				liked: true
+			}
 		});
 
 		return json({ 

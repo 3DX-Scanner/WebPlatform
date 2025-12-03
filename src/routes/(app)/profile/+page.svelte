@@ -3,17 +3,21 @@
     import {Label} from '$lib/components/ui/label';
     import {goto} from '$app/navigation';
     import {onMount, tick} from 'svelte';
+    import {fly} from 'svelte/transition';
     import {Button} from '$lib/components/ui/button';
     import ChangePasswordModal from '$lib/components/ChangePasswordModal/ChangePasswordModal.svelte';
     import ModelFiltersComponent from '$lib/components/ModelFilters/ModelFiltersComponent.svelte';
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
-    import {EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Root} from "$lib/components/ui/empty";
-    import {ArrowUpRight, Link, Pencil, Save} from "lucide-svelte";
+    import CardPricing from '$lib/components/ui/card/card-pricing.svelte';
+    import SubscriptionCard from '$lib/components/ui/card/card-subscription.svelte';
+    import ConfirmDialogComponent from '$lib/components/ConfirmDialog/ConfirmDialogComponent.svelte';
+    import {EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Root as EmptyRoot} from "$lib/components/ui/empty";
     import Pairing from "$lib/components/Pairing/Pairing.svelte";
     import * as Dialog from "$lib/components/ui/dialog";
+    import {Link, ArrowUpRight, Pencil, Save, XCircle} from "@lucide/svelte";
 
-    let {data}: {
+    let { data }: {
         data: {
             user: {
                 id: number;
@@ -22,15 +26,47 @@
                 createdAt: string;
                 hasPassword: boolean;
             };
+            currentSubscription?: {
+                planId: number;
+                planName: string;
+                isActive: boolean;
+                startDate: string;
+                endDate: string | null;
+                storageLimit: number;
+            } | null;
+            plans?: Array<{
+                id: 'free' | 'pro' | 'enterprise';
+                planId: string;
+                name: string;
+                price: number;
+                storageLimit: number;
+            }>;
+            userStats?: {
+                bucketName?: string;
+                totalModels?: number;
+                likedModelsCount?: number;
+                storageUsed?: number;
+                storageLimit?: number;
+                storageUsedMB?: number;
+                storageLimitMB?: number;
+                storageLimitGB?: number;
+                storagePercentage?: string;
+            };
         };
     } = $props();
 
+    const NAVIGATION_SECTIONS = [
+        { id: 'preferences', label: 'Préférences' },
+        { id: 'modeles', label: 'Mes modèles' },
+        { id: 'devices', label: 'Appareils' },
+        { id: 'abonnement', label: 'Abonnement' }
+    ] as const;
+
+    let selectedSection = $state<'preferences' | 'modeles' | 'abonnement' | 'devices'>('preferences');
     let showPairingDialog = $state(false);
     let pairedDevices = $state<any[]>([]);
     let isLoadingDevices = $state(false);
     let deviceToUnpair = $state<number | null>(null);
-
-    let selectedSection = $state('devices');
     let editingPassword = $state(false);
     let showPwdModal = $state(false);
     let currentPassword = $state('');
@@ -49,12 +85,9 @@
     let isLoadingModels = $state(false);
     let loadModelsError = $state('');
 
-    // Optimisé : memoization pour éviter les recalculs inutiles
     let userModelCategories = $state<string[]>([]);
 
     let filteredUserModels = $derived(filterAndSortUserModels(userModels, searchQuery, selectedCategories));
-
-    // Mettre à jour les catégories seulement quand userModels change
     $effect(() => {
         userModelCategories = Array.from(new Set(userModels.map((m) => m.category).filter(Boolean))).sort();
     });
@@ -64,10 +97,23 @@
         likedModelsCount?: number;
         storageUsed?: number;
         storageLimit?: number;
-        storageUsedMB?: string;
+        storageUsedMB?: number;
         storageLimitMB?: number;
+        storageLimitGB?: number;
         storagePercentage?: string;
-    }>({});
+    }>(data.userStats || {});
+    
+    function formatStorageUsed(usedMB: number): string {
+        if (usedMB < 1024) {
+            return `${usedMB.toFixed(2)} MB`;
+        } else {
+            const usedGB = usedMB / 1024;
+            return `${usedGB.toFixed(1).replace('.', ',')} Go`;
+        }
+    }
+    function formatStorageLimit(limitGB: number): string {
+        return `${limitGB.toFixed(0)} Go`;
+    }
 
     let currentPopup = $state({
         isOpen: false,
@@ -86,15 +132,13 @@
         rightCardEl.style.height = target + 'px';
     }
 
-    // Optimisé : ne se déclenche que quand selectedSection change, pas à chaque re-render
     $effect(() => {
-        // Seulement synchroniser quand la section change ou au montage
         if (syncHeightTimeout) {
             clearTimeout(syncHeightTimeout);
         }
         syncHeightTimeout = setTimeout(() => {
             syncHeights();
-        }, 50); // Debounce pour éviter les appels trop fréquents
+        }, 50);
     });
 
     async function loadUserModels() {
@@ -111,12 +155,9 @@
         }
 
         userModels = data.models || [];
-        userStats = data.stats || {};
-        // filteredUserModels est un $derived, pas besoin de le réassigner
         isLoadingModels = false;
     }
 
-    // Cache pour la normalisation
     const normalizeCache = new Map<string, string>();
 
     function normalize(s: string): string {
@@ -130,7 +171,6 @@
     }
 
     function filterAndSortUserModels(list: typeof userModels, search: string, categoryFilters: string[]) {
-        // Si pas de filtre, retourner la liste directement
         if (!search.trim() && categoryFilters.length === 0) {
             return list;
         }
@@ -138,7 +178,6 @@
         const q = normalize(search.trim());
 
         return list.filter(model => {
-            // Optimisation : vérifier d'abord les catégories (plus rapide)
             if (categoryFilters.length > 0) {
                 const matchesCategory = categoryFilters.some(filter => {
                     if (filter === 'public') {
@@ -148,15 +187,12 @@
                     } else if (filter === 'likés') {
                         return model.isLiked === true;
                     }
-                    // Fallback: check if it matches the model's category field
                     return normalize(model.category) === normalize(filter);
                 });
                 if (!matchesCategory) {
                     return false;
                 }
             }
-
-            // Ensuite vérifier la recherche seulement si nécessaire
             if (q === '') {
                 return true;
             }
@@ -193,31 +229,33 @@
 
     async function downloadModel(event: CustomEvent) {
         const {modelPath, title} = event.detail;
-
-        const response = await fetch(modelPath);
-        if (!response.ok) {
+        
+        try {
+            const response = await fetch(modelPath);
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${title}.glb`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Erreur lors du téléchargement:', error);
             alert('Erreur lors du téléchargement du modèle.');
-            return;
         }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${title}.glb`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
     }
 
     onMount(() => {
         syncHeights();
 
-        // Load devices on mount since devices is the default section
-        // loadPairedDevices();
 
-        // Debounce le resize pour éviter trop d'appels
+        
         let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
         const onResize = () => {
             if (resizeTimeout) {
@@ -225,7 +263,7 @@
             }
             resizeTimeout = setTimeout(() => {
                 syncHeights();
-            }, 150); // Debounce de 150ms
+            }, 150);
         };
 
         window.addEventListener('resize', onResize);
@@ -249,7 +287,6 @@
         }
     }
 
-    // Optimisé : ne valider que quand les champs pertinents changent
     $effect(() => {
         if (editingPassword && (newPassword || confirmPassword)) {
             validatePasswords();
@@ -302,16 +339,17 @@
         }
     }
 
-    function handleSectionChange(section: string) {
+    function handleSectionChange(section: 'preferences' | 'modeles' | 'abonnement' | 'devices') {
         selectedSection = section;
-
-        if (section === 'modeles' && userModels.length === 0) {
-            loadUserModels();
-        }
-
-        if (section === 'devices' && pairedDevices.length === 0) {
-            loadPairedDevices();
-        }
+        
+        const sectionLoaders = {
+            modeles: () => userModels.length === 0 && loadUserModels(),
+            devices: () => pairedDevices.length === 0 && loadPairedDevices(),
+            preferences: () => {},
+            abonnement: () => {}
+        };
+        
+        sectionLoaders[section]?.();
     }
 
     async function loadPairedDevices() {
@@ -355,13 +393,142 @@
         deviceToUnpair = null;
     }
 
-    // Effect to refresh devices list when pairing dialog closes with success
+
+    
+    let isLoadingPlan = $state(false);
+    let isCancellingSubscription = $state(false);
+    let showCancelDialog = $state(false);
+    
+    let showSuccessNotification = $state(false);
+    let notificationMessage = $state('');
+    
+    function openCancelDialog() {
+        showCancelDialog = true;
+    }
+    
+    function closeCancelDialog() {
+        showCancelDialog = false;
+    }
+    
+    function closeSuccessNotification() {
+        showSuccessNotification = false;
+    }
+    
     $effect(() => {
-        if (!showPairingDialog && selectedSection === 'devices') {
-            // Reload devices when dialog closes
-            loadPairedDevices();
+        if (showSuccessNotification) {
+            const timer = setTimeout(() => {
+                showSuccessNotification = false;
+            }, 5000);
+            return () => clearTimeout(timer);
         }
     });
+    
+    async function handleCancelSubscription() {
+        closeCancelDialog();
+        isCancellingSubscription = true;
+        try {
+            const response = await fetch('/api/stripe/cancel-subscription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const responseData = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(responseData.error || 'Erreur lors de l\'annulation');
+            }
+            
+            notificationMessage = responseData.message || 'Abonnement annulé avec succès. Vous conservez l\'accès jusqu\'à la fin de votre période de facturation.';
+            showSuccessNotification = true;
+            
+            // Attendre 2 secondes pour que l'utilisateur puisse voir la notification
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } catch (error: any) {
+            console.error('Erreur:', error);
+            alert(error.message || 'Une erreur est survenue lors de l\'annulation');
+            isCancellingSubscription = false;
+        }
+    }
+    
+    function getCurrentPlanStatus(plan: any, currentSubscription: any): boolean {
+        if (!currentSubscription || !currentSubscription.isActive) {
+            return plan.id === 'free';
+        }
+        return currentSubscription.planName.toLowerCase() === plan.id;
+    }
+    
+    function getPlanConfig(plan: any, isCurrentPlan: boolean, isSubscriptionActive?: boolean) {
+        const baseConfig = {
+            price: plan.id === 'enterprise' ? 'Sur mesure' : (plan.price === 0 ? '0' : plan.price.toFixed(2)),
+            period: isCurrentPlan ? '' : (plan.price > 0 ? '/mois' : ''),
+            disabled: isCurrentPlan || isLoadingPlan || (plan.id === 'free' && isSubscriptionActive)
+        };
+        
+        if (isCurrentPlan) {
+            return {
+                ...baseConfig,
+                buttonText: 'Plan actuel',
+                buttonVariant: 'outline' as const
+            };
+        }
+        
+        if (plan.id === 'enterprise') {
+            return {
+                ...baseConfig,
+                buttonText: 'Contactez-nous',
+                buttonVariant: 'outline' as const
+            };
+        }
+        
+        return {
+            ...baseConfig,
+            buttonText: 'Choisir ce plan',
+            buttonVariant: 'default' as const
+        };
+    }
+    
+    function getPlanStyles(planId: string, isCurrentPlan: boolean = false) {
+        const styles: Record<string, { gradient: string; borderColor: string }> = {
+            free: { gradient: 'from-gray-600 to-gray-700', borderColor: isCurrentPlan ? 'border-cyan-500' : 'border-gray-500/20' },
+            pro: { gradient: 'from-cyan-500 to-cyan-500 dark:from-cyan-500 dark:to-blue-600', borderColor: isCurrentPlan ? 'border-cyan-500' : 'border-cyan-500/20' },
+            enterprise: { gradient: 'from-purple-600 to-pink-600', borderColor: isCurrentPlan ? 'border-cyan-500' : 'border-purple-500/20' }
+        };
+        return styles[planId] || styles.free;
+    }
+    
+    function handlePlanSelect(planId: 'free' | 'pro' | 'enterprise') {
+        const planActions = {
+            enterprise: () => window.location.href = '/contact',
+            free: () => {},
+            pro: () => redirectToSubscription(planId)
+        };
+        
+        if (isCurrentPlan(planId)) {
+            return;
+        }
+        
+        planActions[planId]();
+    }
+    
+    function isCurrentPlan(planId: string): boolean {
+        if (!data.currentSubscription) return planId === 'free';
+        
+        const currentPlanName = data.currentSubscription.isActive 
+            ? data.currentSubscription.planName?.toLowerCase() 
+            : 'free';
+        
+        return currentPlanName === planId;
+    }
+    
+    function redirectToSubscription(planId: string) {
+        isLoadingPlan = true;
+        window.location.href = `/subscription?plan=${planId}`;
+    }
 
     function handlePasswordFieldChange(field: string, value: string) {
         if (field === 'current') currentPassword = value;
@@ -394,10 +561,8 @@
         return usernameRegex.test(newUsername);
     }
 
-    // Optimisé : ne réinitialiser l'erreur que quand l'utilisateur tape
     $effect(() => {
         if (newUsername && editingUsername && usernameError) {
-            // Réinitialiser seulement les erreurs de validation serveur, pas les erreurs de format
             if (usernameError === 'Ce nom d\'utilisateur est déjà utilisé' || usernameError === 'Erreur réseau') {
                 usernameError = '';
             }
@@ -462,18 +627,13 @@
                     {data.user.email.charAt(0).toUpperCase()}
                 </div>
                 <div class="font-extrabold text-card-foreground text-lg">{data.user.username}</div>
-                <div class="text-muted-foreground text-base">{data.user.email || 'Connecté via Google'}</div>
+                <div class="text-muted-foreground text-base">{data.user.email}</div>
                 <div class="mt-1 px-3 py-2 rounded-full text-sm bg-secondary text-secondary-foreground">
                     Membre depuis {new Date(data.user.createdAt).toLocaleDateString('fr-FR')}
                 </div>
 
                 <ul class="w-full grid gap-3 mt-4" role="tablist">
-                    {#each [
-                        {id: 'devices', label: 'Appareils'},
-                        {id: 'preferences', label: 'Préférences'},
-                        {id: 'storage', label: 'Stockage'},
-                        {id: 'subscription', label: 'Abonnement'}
-                    ] as section}
+                    {#each NAVIGATION_SECTIONS as section}
                         <li>
                             <button
                                 type="button"
@@ -485,8 +645,9 @@
                                 class:shadow-md={selectedSection === section.id}
                                 class:bg-secondary={selectedSection !== section.id}
                                 class:text-secondary-foreground={selectedSection !== section.id}
+                                class:border-transparent={selectedSection !== section.id}
                                 aria-selected={selectedSection === section.id}
-                                onclick={() => handleSectionChange(section.id)}
+                                onclick={() => handleSectionChange(section.id as 'preferences' | 'modeles' | 'abonnement' | 'devices')}
                             >
                                 {section.label}
                             </button>
@@ -513,7 +674,7 @@
                                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                             </div>
                         {:else if pairedDevices.length === 0}
-                            <Root>
+                            <EmptyRoot>
                                 <EmptyHeader>
                                     <EmptyMedia variant="icon">
                                         <Link/>
@@ -535,7 +696,7 @@
                                         <ArrowUpRight class="inline"/>
                                     </a>
                                 </Button>
-                            </Root>
+                            </EmptyRoot>
                         {:else}
                             <div class="mb-4 flex justify-end">
                                 <Button onclick={() => { showPairingDialog = true; }}>
@@ -644,45 +805,44 @@
                                                 <Save size={16}/>
                                             </Button>
                                             <Button variant="outline" onclick={cancelEditingUsername}>
+                                                <XCircle size={16}/>
                                             </Button>
                                         </div>
                                     </div>
                                 {/if}
                             </div>
 
-                            <!-- Mot de passe -->
                             <div class="grid gap-3 mb-4">
-                                {#if !editingPassword}
-                                    <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
-                                        <span class="font-bold text-card-foreground">Mot de passe</span>
-                                        {#if data.user.hasPassword}
+                                {#if data.user.hasPassword}
+                                    {#if !editingPassword}
+                                        <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
+                                            <span class="font-bold text-card-foreground">Mot de passe</span>
                                             <div class="flex gap-3 items-center">
-                                            <span class="text-muted-foreground flex gap-1 items-center">
-                                                {#each Array(8) as _}
-                                                    <span class="w-2 h-2 rounded-full bg-muted-foreground"></span>
-                                                {/each}
-                                            </span>
+                                                <span class="text-muted-foreground flex gap-1 items-center">
+                                                    {#each Array(8) as _}
+                                                        <span class="w-2 h-2 rounded-full bg-muted-foreground"></span>
+                                                    {/each}
+                                                </span>
                                                 <Button variant="outline" class="ml-auto"
                                                         onclick={() => { showPwdModal = true; }}>
                                                     <Pencil size={16}/>
                                                 </Button>
                                             </div>
-                                        {:else}
-                                            <p class="m-0 leading-relaxed">Votre compte est connecté via Google.</p>
-                                        {/if}
+                                        </div>
+                                    {/if}
+                                {:else}
+                                    <div class="flex gap-4 bg-accent rounded-xl p-5 text-accent-foreground items-start">
+                                        <div class="flex flex-col gap-2">
+                                            <h4 class="m-0 text-accent-foreground text-lg font-bold">Authentification Google</h4>
+                                            <p class="m-0 leading-relaxed">Votre compte est connecté via Google. La gestion du mot de passe se fait directement depuis votre compte Google.</p>
+                                            <p class="m-0 text-accent-foreground/80 italic text-sm">Vous n'avez pas besoin de définir un mot de passe pour ce compte.</p>
+                                        </div>
                                     </div>
                                 {/if}
                             </div>
-
-                            <!-- Double authentification -->
-                            <div class="grid grid-cols-[220px_1fr] gap-3 items-center mb-4">
-                                <span class="font-bold text-card-foreground">Double authentification</span>
-                                <input type="text" value="Désactivée" disabled
-                                       class="border border-border rounded-lg px-3 py-2 bg-muted text-muted-foreground cursor-not-allowed"/>
-                            </div>
                         </div>
                     </section>
-                {:else if selectedSection === 'storage'}
+                {:else if false}
                     <section class="mb-4">
                         <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Stockage</h3>
 
@@ -700,8 +860,7 @@
                                             </svg>
                                         </div>
                                         <div>
-                                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                Bucket</p>
+                                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bucket</p>
                                             <p class="text-lg font-bold text-card-foreground">{userStats.bucketName}</p>
                                         </div>
                                     </div>
@@ -716,8 +875,7 @@
                                             </svg>
                                         </div>
                                         <div>
-                                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                Modèles likés</p>
+                                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Modèles likés</p>
                                             <p class="text-lg font-bold text-card-foreground">{userStats.likedModelsCount || 0}</p>
                                         </div>
                                     </div>
@@ -734,57 +892,22 @@
                                             </svg>
                                         </div>
                                         <div>
-                                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                                Mes modèles</p>
+                                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mes modèles</p>
                                             <p class="text-lg font-bold text-card-foreground">{userStats.totalModels || 0}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Stockage utilisé -->
-                            <div class="rounded-xl p-5 mb-6 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 bg-card">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div>
-                                        <p class="text-sm font-semibold mb-1 uppercase tracking-wide text-muted-foreground">
-                                            Stockage utilisé</p>
-                                        <p class="text-2xl font-bold text-card-foreground">
-                                            {userStats.storageUsedMB || '0'} MB
-                                            <span class="text-sm font-normal text-muted-foreground">
-                                            / {userStats.storageLimitMB || 1024} MB
-                                        </span>
-                                        </p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-2xl font-bold text-card-foreground">{userStats.storagePercentage || '0'}
-                                            %</p>
-                                        <p class="text-xs uppercase tracking-wide text-muted-foreground">utilisé</p>
-                                    </div>
-                                </div>
 
-                                <!-- Barre de progression -->
-                                <div class="w-full rounded-full h-3 overflow-hidden shadow-inner bg-muted">
-                                    <div
-                                            class="h-full transition-all duration-500 ease-out rounded-full shadow-sm bg-primary"
-                                            style="width: {Math.min(100, parseFloat(userStats.storagePercentage || '0'))}%"
-                                    ></div>
-                                </div>
-
-                                {#if parseFloat(userStats.storagePercentage || '0') > 80}
-                                    <p class="text-xs mt-3 flex items-center gap-1.5 px-3 py-2 rounded-lg border border-warning bg-warning/10 text-warning">
-                                        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd"
-                                                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                                  clip-rule="evenodd"/>
-                                        </svg>
-                                        <span class="font-medium">Attention : Vous approchez de la limite de stockage</span>
-                                    </p>
-                                {/if}
-                            </div>
                         {/if}
+                    </section>
+                {:else if selectedSection === 'modeles'}
+                    <section class="mb-4">
+                        <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Mes modèles</h3>
 
                         {#if loadModelsError}
-                            <Root>
+                            <EmptyRoot>
                                 <EmptyHeader>
                                     <EmptyTitle>Erreur de chargement</EmptyTitle>
                                     <EmptyDescription>{loadModelsError}</EmptyDescription>
@@ -792,9 +915,9 @@
                                 <EmptyContent>
                                     <Button onclick={() => window.location.reload()}>Réessayer</Button>
                                 </EmptyContent>
-                            </Root>
+                            </EmptyRoot>
                         {:else if userModels.length === 0}
-                            <Root>
+                            <EmptyRoot>
                                 <EmptyHeader>
                                     <EmptyTitle>Aucun modèle pour le moment</EmptyTitle>
                                     <EmptyDescription>Ouvrez la galerie des modèles 3D pour commencer.
@@ -803,7 +926,7 @@
                                 <EmptyContent>
                                     <Button href="/models3D">Voir les modèles</Button>
                                 </EmptyContent>
-                            </Root>
+                            </EmptyRoot>
                         {:else}
                             <ModelFiltersComponent
                                     {searchQuery}
@@ -824,20 +947,60 @@
                             </div>
 
                             {#if filteredUserModels.length === 0}
-                                <Root>
+                                <EmptyRoot>
                                     <EmptyHeader>
                                         <EmptyTitle>Aucun modèle trouvé</EmptyTitle>
                                         <EmptyDescription>Essayez de modifier vos critères de recherche
                                         </EmptyDescription>
                                     </EmptyHeader>
-                                </Root>
+                                </EmptyRoot>
                             {/if}
                         {/if}
                     </section>
-                {:else}
+                {:else if selectedSection === 'abonnement'}
                     <section class="mb-4">
                         <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Abonnement</h3>
-
+                        
+                        <!-- Current subscription display -->
+                        {#if data.currentSubscription}
+                            <div class="mb-6">
+                                <SubscriptionCard 
+                                    subscription={data.currentSubscription}
+                                    userStats={userStats}
+                                    {isCancellingSubscription}
+                                    {formatStorageUsed}
+                                    onCancelSubscription={openCancelDialog}
+                                />
+                            </div>
+                        {/if}
+                        
+                        <!-- Plans disponibles -->
+                        {#if data.plans && data.plans.length > 0}
+                            <div>
+                                <h4 class="text-lg font-semibold text-card-foreground mb-4">Plans disponibles</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {#each data.plans as dbPlan}
+                                        {@const isCurrentPlan = getCurrentPlanStatus(dbPlan, data.currentSubscription)}
+                                        {@const styles = getPlanStyles(dbPlan.id, isCurrentPlan)}
+                                        {@const planConfig = getPlanConfig(dbPlan, isCurrentPlan, data.currentSubscription?.isActive)}
+                                        <CardPricing
+                                            id={dbPlan.id}
+                                            name={dbPlan.name}
+                                            price={planConfig.price}
+                                            period={planConfig.period}
+                                            description=""
+                                            gradient={styles.gradient}
+                                            borderColor={styles.borderColor}
+                                            buttonText={planConfig.buttonText}
+                                            buttonVariant={planConfig.buttonVariant}
+                                            disabled={planConfig.disabled}
+                                            isCurrentPlan={isCurrentPlan}
+                                            onSelect={handlePlanSelect}
+                                        />
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
                     </section>
                 {/if}
             </div>
@@ -857,9 +1020,43 @@
         ondownload={downloadModel}
 />
 
-<style>
-    .tab-button:not([aria-selected="true"]):hover {
-        opacity: 0.8;
-        transform: translateY(-1px);
-    }
-</style>
+<ConfirmDialogComponent
+    isOpen={showCancelDialog}
+    title="Annulation de l'abonnement"
+    message="Cette action est irréversible. Vous conserverez l'accès à toutes les fonctionnalités Pro jusqu'à la fin de votre période de facturation actuelle.{'\n\n'}Après cette date, votre compte basculera automatiquement vers le plan gratuit avec les limitations associées."
+    confirmText="Confirmer l'annulation"
+    cancelText="Annuler"
+    variant="danger"
+    on:confirm={handleCancelSubscription}
+    on:cancel={closeCancelDialog}
+/>
+
+<!-- Notification de succès moderne -->
+{#if showSuccessNotification}
+    <div class="fixed top-4 right-4 z-[1001] pointer-events-auto" 
+         transition:fly={{ y: -50, duration: 300, opacity: 0 }}>
+        <div class="bg-emerald-50 dark:bg-emerald-950 border-l-4 border-emerald-400 rounded-lg shadow-lg p-4 max-w-md">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 mt-0.5">
+                    <svg class="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200 leading-5">
+                        {notificationMessage}
+                    </p>
+                </div>
+                <button 
+                    onclick={closeSuccessNotification}
+                    class="flex-shrink-0 ml-2 text-emerald-400 hover:text-emerald-600 transition-colors duration-200"
+                    aria-label="Fermer la notification"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
