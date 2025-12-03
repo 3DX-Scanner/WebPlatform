@@ -3,12 +3,15 @@
     import { Check, X } from '@lucide/svelte';
     import PricingCardComponent from '$lib/components/PricingCard/PricingCardComponent.svelte';
     
-    let currentPlan = $state<'free' | 'pro' | 'enterprise'>('free');
+    let { data } = $props();
     
-    const plans: Array<{
-        id: 'free' | 'pro' | 'enterprise';
-        name: string;
-        price: string;
+    const currentSubscription = (data as any).currentSubscription;
+    const currentPlanFromData = currentSubscription 
+        ? (currentSubscription.planName.toLowerCase() as 'free' | 'pro' | 'enterprise')
+        : 'free';
+    let currentPlan = $state<'free' | 'pro' | 'enterprise'>(currentPlanFromData);
+    
+    const planConfig: Record<string, {
         period: string;
         description: string;
         gradient: string;
@@ -16,158 +19,134 @@
         buttonText: string;
         buttonVariant: 'default' | 'outline';
         disabled: boolean;
-    }> = [
-        {
-            id: 'free',
-            name: 'Gratuit',
-            price: '0€',
+    }> = {
+        free: {
             period: '',
             description: 'Parfait pour commencer',
             gradient: 'from-gray-600 to-gray-700',
             borderColor: 'border-gray-500/20',
             buttonText: 'Plan actuel',
-            buttonVariant: 'outline' as const,
+            buttonVariant: 'outline',
             disabled: true
         },
-        {
-            id: 'pro',
-            name: 'Pro',
-            price: '7.99€',
+        pro: {
             period: '/mois',
             description: 'Le plus populaire',
             gradient: 'from-cyan-500 to-cyan-500 dark:from-cyan-500 dark:to-blue-600',
             borderColor: 'border-cyan-500',
             buttonText: 'Passer au plan Pro',
-            buttonVariant: 'default' as const,
+            buttonVariant: 'default',
             disabled: false
         },
-        {
-            id: 'enterprise',
-            name: 'Entreprise',
-            price: '20€',
+        enterprise: {
             period: '/mois',
             description: 'Pour les équipes',
             gradient: 'from-purple-600 to-pink-600',
             borderColor: 'border-purple-500/20',
             buttonText: 'Contactez-nous',
-            buttonVariant: 'outline' as const,
+            buttonVariant: 'outline',
             disabled: false
         }
-    ];
+    };
     
-    // Tableau comparatif des fonctionnalités
-    const comparisonFeatures = [
-        {
-            feature: 'Stockage cloud',
-            free: '1 Go',
-            pro: '500 Go',
-            enterprise: 'Illimité'
-        },
-        {
-            feature: 'Export PLY',
-            free: true,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export OBJ',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export FBX',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export GLB',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Export haute résolution',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Scans illimités',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Support communautaire',
-            free: true,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Support prioritaire',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Assistance entreprise dédiée',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Accès API',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'API personnalisée',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Synchronisation cloud avancée',
-            free: false,
-            pro: true,
-            enterprise: true
-        },
-        {
-            feature: 'Formation incluse',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Intégration sur mesure',
-            free: false,
-            pro: false,
-            enterprise: true
-        },
-        {
-            feature: 'Gestion multi-utilisateurs',
-            free: false,
-            pro: false,
-            enterprise: true
-        }
-    ];
+    const plans = (data.plans || []).map((dbPlan: any) => {
+        const config = planConfig[dbPlan.id] || planConfig.free;
+        const priceValue = typeof dbPlan.price === 'number' 
+            ? dbPlan.price 
+            : typeof dbPlan.price === 'string' 
+                ? parseFloat(dbPlan.price) 
+                : Number(dbPlan.price) || 0;
+        
+        const isCurrentPlan = dbPlan.isCurrentPlan || false;
+        
+        return {
+            id: dbPlan.id,
+            planId: dbPlan.planId as string,
+            name: dbPlan.name,
+            price: priceValue === 0 ? '0' : priceValue.toFixed(2),
+            period: config.period,
+            description: config.description,
+            gradient: config.gradient,
+            borderColor: config.borderColor,
+            buttonText: isCurrentPlan ? 'Plan actuel' : config.buttonText,
+            buttonVariant: isCurrentPlan ? 'outline' : config.buttonVariant,
+            disabled: isCurrentPlan || config.disabled,
+            isCurrentPlan
+        };
+    });
     
-    function handlePlanSelect(planId: 'free' | 'pro' | 'enterprise') {
+    const comparisonFeatures = data.comparisonFeatures || [];
+    
+    let isLoading = $state(false);
+    
+    async function handlePlanSelect(planId: 'free' | 'pro' | 'enterprise') {
         if (planId === 'enterprise') {
             window.location.href = '/contact';
-        } else if (planId === 'pro') {
-            currentPlan = planId;
-            alert('Redirection vers le paiement...');
+            return;
+        }
+        
+        if (planId === 'free') {
+            return;
+        }
+        
+        const plan = plans.find(p => p.id === planId);
+        if (!plan || !plan.planId) {
+            alert('Erreur: Plan introuvable');
+            return;
+        }
+        
+        if (plan.isCurrentPlan) {
+            return;
+        }
+        
+        try {
+            const authResponse = await fetch('/api/auth/status');
+            const authData = await authResponse.json();
+            
+            if (!authData.authenticated) {
+                const returnUrl = encodeURIComponent('/subscription');
+                window.location.href = `/login?redirect=${returnUrl}`;
+                return;
+            }
+        } catch (error) {
+            window.location.href = '/login';
+            return;
+        }
+        
+        isLoading = true;
+        try {
+            const response = await fetch('/api/stripe/create-checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ planId: plan.planId })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                throw new Error(data.error || 'Erreur lors de la création de la session de paiement');
+            }
+            
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                throw new Error('URL de paiement non reçue');
+            }
+        } catch (error: any) {
+            isLoading = false;
+            alert(error.message || 'Une erreur est survenue lors du paiement.');
         }
     }
     
 </script>
 
 <div class="min-h-screen w-full bg-background">
-    <!-- Hero Section -->
     <section class="relative py-16 md:py-24 px-4 sm:px-6 md:px-8 overflow-hidden">
         <div class="max-w-4xl mx-auto text-center relative z-10">
             <h1 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
@@ -177,15 +156,8 @@
                 Sélectionnez l'abonnement qui correspond le mieux à vos besoins. Tous les plans incluent nos fonctionnalités de base.
             </p>
         </div>
-        
-        <!-- Background decoration -->
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute top-20 left-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-        </div>
     </section>
 
-    <!-- Pricing Cards -->
     <section class="py-8 md:py-12 px-4 sm:px-6 md:px-8 relative">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
@@ -200,7 +172,7 @@
                         borderColor={plan.borderColor}
                         buttonText={plan.buttonText}
                         buttonVariant={plan.buttonVariant}
-                        disabled={plan.disabled}
+                        disabled={plan.disabled || isLoading}
                         onSelect={handlePlanSelect}
                     />
                 {/each}
@@ -208,7 +180,6 @@
         </div>
     </section>
 
-    <!-- Comparison Table -->
     <section class="py-16 md:py-24 px-4 sm:px-6 md:px-8 bg-background relative">
         <div class="max-w-7xl mx-auto">
             <h2 class="text-center text-3xl md:text-4xl mb-8 text-foreground font-bold">Comparaison des plans</h2>
@@ -223,7 +194,6 @@
                                 <th class="text-center p-6 font-bold text-foreground bg-cyan-500/10">
                                     <div class="flex flex-col items-center gap-1">
                                         <span>Pro</span>
-                                        <span class="text-xs font-normal text-muted-foreground">7.99€/mois</span>
                                     </div>
                                 </th>
                                 <th class="text-center p-6 font-bold text-foreground bg-purple-500/10">Entreprise</th>
@@ -289,7 +259,6 @@
                 </div>
             </div>
             
-            <!-- Mobile-friendly cards view (hidden on desktop) -->
             <div class="md:hidden mt-8 space-y-6">
                 {#each plans as plan}
                     <div class="bg-card/80 backdrop-blur-sm border-2 {plan.borderColor} rounded-2xl p-6">
@@ -325,24 +294,3 @@
         </div>
     </section>
 </div>
-
-<style>
-    .hero-gradient-text {
-        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 25%, #8b5cf6 50%, #ec4899 75%, #06b6d4 100%);
-        background-size: 300% 300%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: gradient-shift 8s ease infinite;
-        filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.5));
-    }
-
-    @keyframes gradient-shift {
-        0%, 100% {
-            background-position: 0% 50%;
-        }
-        50% {
-            background-position: 100% 50%;
-        }
-    }
-</style>

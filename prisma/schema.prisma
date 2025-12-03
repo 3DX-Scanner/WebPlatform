@@ -15,14 +15,16 @@ enum PairingStatus {
 }
 
 model User {
-  id              Int              @id @default(autoincrement())
-  email           String           @unique
-  username        String           @unique
-  password        String
-  bucketName      String?          @unique
-  createdAt       DateTime         @default(now())
-  devices         UserDevice[]
-  modelLikes      UserModel[]
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  username     String        @unique
+  password     String
+  bucketName   String?       @unique
+  createdAt    DateTime      @default(now())
+  devices      UserDevice[]
+  models       Model[]
+  subscription Subscription?
+  payments     Payment[]
   pairingSessions PairingSession[]
 }
 
@@ -70,9 +72,103 @@ model UserModel {
   id        Int      @id @default(autoincrement())
   userId    Int
   modelPath String // Chemin du modèle (bucketName/folderName)
+  modelId   String
+  liked     Boolean  @default(true)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, modelPath])
   @@index([modelPath])
+}
+
+model SubscriptionPlan {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  price         Decimal        @default(0)
+  storageLimit  Int
+  features      String[]
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+
+  @@index([name])
+}
+
+model Subscription {
+  id          Int              @id @default(autoincrement())
+  userId      Int              @unique
+  planId      Int
+  bucketName  String           @unique
+  storageUsed BigInt           @default(0)
+  isActive    Boolean          @default(true)
+  startDate   DateTime         @default(now())
+  endDate     DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([planId])
+  @@index([bucketName])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        Int
+  stripeSession String   @unique
+  amount        Int
+  status        String   @default("pending") // "pending" | "paid" | "failed"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeSession])
+  @@index([status])
+}
+
+model SubscriptionPlan {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  price         Decimal        @default(0)
+  storageLimit  Int
+  features      String[]
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+
+  @@index([name])
+}
+
+model Subscription {
+  id          Int              @id @default(autoincrement())
+  userId      Int              @unique
+  planId      Int
+  bucketName  String           @unique
+  storageUsed BigInt           @default(0)
+  isActive    Boolean          @default(true)
+  startDate   DateTime         @default(now())
+  endDate     DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([planId])
+  @@index([bucketName])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        Int
+  stripeSession String   @unique
+  amount        Int
+  status        String   @default("pending") // "pending" | "paid" | "failed"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeSession])
+  @@index([status])
 }
