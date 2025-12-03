@@ -134,7 +134,7 @@
             </div>
 
             <!-- Actions avec design moderne -->
-            <div class="flex items-center justify-end gap-3 p-6 pt-4 border-t border-border">
+            <div class="flex items-center justify-center gap-3 p-6 pt-4 border-t border-border">
                 <Button
                     type="button"
                     variant="outline"

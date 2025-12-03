@@ -79,28 +79,26 @@
                         </Card.Header>
                         <Card.Content>
                             <form onsubmit={handleSubmit} class="space-y-6">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div class="space-y-2">
-                                        <Label for="name">Nom complet</Label>
-                                        <Input 
-                                            id="name" 
-                                            type="text" 
-                                            placeholder="Jean Dupont"
-                                            bind:value={name}
-                                            required
-                                        />
-                                    </div>
-                                    
-                                    <div class="space-y-2">
-                                        <Label for="email">Email</Label>
-                                        <Input 
-                                            id="email" 
-                                            type="email" 
-                                            placeholder="jean.dupont@example.com"
-                                            bind:value={email}
-                                            required
-                                        />
-                                    </div>
+                                <div class="space-y-2">
+                                    <Label for="name">Nom complet</Label>
+                                    <Input 
+                                        id="name" 
+                                        type="text" 
+                                        placeholder="Jean Dupont"
+                                        bind:value={name}
+                                        required
+                                    />
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <Label for="email">Email</Label>
+                                    <Input 
+                                        id="email" 
+                                        type="email" 
+                                        placeholder="jean.dupont@example.com"
+                                        bind:value={email}
+                                        required
+                                    />
                                 </div>
                                 
                                 <div class="space-y-2">

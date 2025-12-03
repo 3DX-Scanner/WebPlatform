@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
+import { sendContactEmail } from '$lib/server/email';
 
 export const POST: RequestHandler = async ({ request }) => {
     try {
@@ -19,17 +20,30 @@ export const POST: RequestHandler = async ({ request }) => {
                 { status: 400 }
             );
         }
-        
-        const contactEmail = '3dxscanner@gmail.com';
-        const mailtoLink = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-            `Nom: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
-        )}`;
-        
-        return json({
-            success: true,
-            message: 'Message reçu avec succès',
-            mailtoLink
-        });
+
+        // Envoi des emails via Nodemailer avec fallback
+        try {
+            await sendContactEmail({ name, email, subject, message });
+            
+            return json({
+                success: true,
+                message: 'Message envoyé avec succès ! Vous recevrez une confirmation par email.'
+            });
+        } catch (emailError) {
+            // Fallback vers mailto si l'authentification Gmail échoue
+            console.warn('Envoi email automatique échoué, fallback vers mailto:', emailError);
+            
+            const contactEmail = '3dxscanner@gmail.com';
+            const mailtoLink = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+                `Nom: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
+            )}`;
+            
+            return json({
+                success: true,
+                message: 'Message reçu avec succès',
+                mailtoLink
+            });
+        }
         
     } catch (error) {
         console.error('Erreur lors du traitement du contact:', error);

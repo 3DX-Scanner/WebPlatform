@@ -13,19 +13,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 
 	try {
-		const { modelId: modelPath } = await request.json();
+		const { modelId } = await request.json();
 
-		if (!modelPath || typeof modelPath !== 'string') {
+		if (!modelId || typeof modelId !== 'string') {
 			return json({ error: 'modelId est requis' }, { status: 400 });
 		}
 
-		// @ts-ignore - Le modèle Model sera disponible après la génération du client Prisma
 		// Vérifier si le modèle existe déjà pour cet utilisateur
 		const existingModel = await prisma.model.findUnique({
 			where: {
-				userId_modelPath: {
+				userId_modelId: {
 					userId: locals.user.id,
-					modelPath: modelPath
+					modelId: modelId
 				}
 			}
 		});
@@ -59,7 +58,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 
 		// Compter le nombre total de likes pour ce modèle (seulement ceux avec liked = true)
-		// @ts-ignore
 		const likeCount = await prisma.model.count({
 			where: { 
 				modelId: modelId,
@@ -91,7 +89,6 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 		}
 
 		// Mettre à jour le champ liked à false au lieu de supprimer
-		// @ts-ignore
 		const existingModel = await prisma.model.findUnique({
 			where: {
 				userId_modelId: {
@@ -117,7 +114,6 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 		}
 
 		// Compter le nombre total de likes pour ce modèle (seulement ceux avec liked = true)
-		// @ts-ignore
 		const likeCount = await prisma.model.count({
 			where: { 
 				modelId: modelId,

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Button } from '$lib/components/ui/button';
     import { Check, X } from '@lucide/svelte';
-    import PricingCardComponent from '$lib/components/PricingCard/PricingCardComponent.svelte';
+    import { CardPricing } from '$lib/components/ui/card';
     
     let { data } = $props();
     
@@ -62,8 +62,8 @@
         return {
             id: dbPlan.id,
             planId: dbPlan.planId as string,
-            name: dbPlan.name,
-            price: priceValue === 0 ? '0' : priceValue.toFixed(2),
+            name: dbPlan.name === 'Enterprise' ? 'Entreprise' : dbPlan.name,
+            price: dbPlan.id === 'enterprise' ? 'Sur mesure' : (priceValue === 0 ? '0' : priceValue.toFixed(2)),
             period: config.period,
             description: config.description,
             gradient: config.gradient,
@@ -162,7 +162,7 @@
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                 {#each plans as plan}
-                    <PricingCardComponent
+                    <CardPricing
                         id={plan.id}
                         name={plan.name}
                         price={plan.price}
