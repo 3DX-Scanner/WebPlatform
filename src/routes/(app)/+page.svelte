@@ -1,6 +1,5 @@
 <script lang="ts">
     import { Button } from '$lib/components/ui/button';
-    import Scanner3DViewerComponent from '$lib/components/Scanner3DViewer/Scanner3DViewerComponent.svelte';
 </script>
 
 <div class="min-h-screen w-full overflow-x-hidden bg-background">

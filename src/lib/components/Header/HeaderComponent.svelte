@@ -5,28 +5,26 @@
     import {toggleMode} from "mode-watcher";
     import {SunIcon, MoonIcon, Menu} from '@lucide/svelte';
 
-    let {isAuthenticated = false} = $props();
-    let resolvedAuth = $state(isAuthenticated);
+    let isAuthenticated = $state(false);
     let isMenuOpen = $state(false);
 
-    async function refreshAuth() {
+    async function checkAuth() {
         try {
             const res = await fetch('/api/auth/status');
             if (res.ok) {
                 const data = await res.json();
-                resolvedAuth = Boolean(data?.authenticated);
+                isAuthenticated = data.authenticated;
             }
         } catch {
         }
     }
 
     onMount(() => {
-        resolvedAuth = isAuthenticated;
-        refreshAuth();
+        checkAuth();
     });
 
     afterNavigate(() => {
-        refreshAuth();
+        checkAuth();
     });
 
     function toggleMenu() {
@@ -67,7 +65,7 @@
                 Explorer
                 <span class="absolute left-0 -bottom-1 h-0.5 w-full bg-foreground scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100"></span>
             </a>
-            {#if resolvedAuth}
+            {#if isAuthenticated}
                 <a href="/editor"
                    class="group relative text-foreground visited:text-foreground hover:text-foreground focus:text-foreground">
                     Dashboard
@@ -107,7 +105,7 @@
                    class="group relative text-foreground visited:text-foreground hover:text-foreground focus:text-foreground">Nos
                     modèles<span
                             class="absolute left-0 -bottom-1 h-0.5 w-full bg-foreground scale-x-0 origin-left transition-transform duration-200 group-hover:scale-x-100"></span></a>
-                {#if resolvedAuth}
+                {#if isAuthenticated}
                     <a href="/profile"
                        class="group relative text-foreground visited:text-foreground hover:text-foreground focus:text-foreground">Mon
                         compte<span

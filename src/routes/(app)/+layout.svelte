@@ -6,7 +6,7 @@
 </script>
 
 <div class="min-h-screen overflow-x-hidden w-full max-w-screen bg-background">
-    <HeaderComponent isAuthenticated={data?.isAuthenticated ?? false} />
+    <HeaderComponent />
     {@render children()}
     <FooterComponent />
 </div>
