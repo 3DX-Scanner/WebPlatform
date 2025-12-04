@@ -8,7 +8,8 @@
   import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
   import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-  import { Maximize2, X } from 'lucide-svelte';
+  import Maximize2 from '@lucide/svelte/icons/maximize-2';
+  import X from '@lucide/svelte/icons/x';
   import { theme } from 'mode-watcher';
 
   let { 

@@ -9,7 +9,10 @@
     import ModelCardComponent from '$lib/components/ModelCard/ModelCardComponent.svelte';
     import Model3DPopupComponent from '$lib/components/Model3DPopup/Model3DPopupComponent.svelte';
     import {EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Root} from "$lib/components/ui/empty";
-    import {ArrowUpRight, Link, Pencil, Save} from "lucide-svelte";
+    import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+    import Link from '@lucide/svelte/icons/link';
+    import Pencil from '@lucide/svelte/icons/pencil';
+    import Save from '@lucide/svelte/icons/save';
     import Pairing from "$lib/components/Pairing/Pairing.svelte";
     import * as Dialog from "$lib/components/ui/dialog";
 

@@ -5,7 +5,7 @@ import { initializeBuckets, syncStaticModelsToMinio } from '$lib/server/minio';
 
 let minioInitialized = false;
 
-/*if (!minioInitialized) {
+if (!minioInitialized) {
 	minioInitialized = true; // Set flag FIRST to prevent re-entry
 	initializeBuckets()
 		.then(() => {
@@ -18,7 +18,7 @@ let minioInitialized = false;
 		.catch((err) => {
 			console.error('Erreur lors de l\'initialisation de MinIO:', err);
 		});
-}*/
+}
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get('jwt');

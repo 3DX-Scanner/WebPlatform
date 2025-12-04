@@ -3,7 +3,9 @@
     import {afterNavigate} from '$app/navigation';
     import {Button} from "$lib/components/ui/button";
     import {toggleMode} from "mode-watcher";
-    import {SunIcon, MoonIcon, Menu} from '@lucide/svelte';
+    import SunIcon from '@lucide/svelte/icons/sun';
+    import MoonIcon from '@lucide/svelte/icons/moon';
+    import Menu from '@lucide/svelte/icons/menu';
 
     let isAuthenticated = $state(false);
     let isMenuOpen = $state(false);

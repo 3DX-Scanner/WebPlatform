@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from '$lib/components/ui/button';
-    import { Check, X } from '@lucide/svelte';
+    import Check from '@lucide/svelte/icons/check';
+    import X from '@lucide/svelte/icons/x';
     import PricingCardComponent from '$lib/components/PricingCard/PricingCardComponent.svelte';
     
     let currentPlan = $state<'free' | 'pro' | 'enterprise'>('free');

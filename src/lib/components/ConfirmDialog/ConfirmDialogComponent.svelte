@@ -1,6 +1,9 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
-    import { X, AlertTriangle, AlertCircle, Info } from 'lucide-svelte';
+    import X from '@lucide/svelte/icons/x';
+    import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+    import AlertCircle from '@lucide/svelte/icons/alert-circle';
+    import Info from '@lucide/svelte/icons/info';
     import { fly, fade } from 'svelte/transition';
     import { Button } from '$lib/components/ui/button';
 
