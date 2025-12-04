@@ -13,9 +13,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 		const pairingSession = await prisma.pairingSession.create({
 			data: {
 				userId: locals.user.id,
-                deviceSerialNumber: "ABC1234567",
-				expiresAt,
-				status: 'PENDING'
+				expiresAt
 			}
 		});
 

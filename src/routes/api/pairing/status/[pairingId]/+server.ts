@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import {prisma} from '$lib/server/prisma';
+import { prisma } from '$lib/server/prisma';
+import { derivePairingStatus } from '$lib/utils';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -29,15 +30,13 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 			return json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		if (pairingSession.status === 'PENDING' && new Date() > pairingSession.expiresAt) {
-			await prisma.pairingSession.update({
-				where: { id: pairingId },
-				data: { status: 'EXPIRED' }
-			});
+		const status = derivePairingStatus(pairingSession.deviceSerialNumber, pairingSession.expiresAt);
+
+		if (status === 'expired') {
 			return json({ status: 'expired' });
 		}
 
-		if (pairingSession.status === 'COMPLETED' && pairingSession.deviceSerialNumber) {
+		if (status === 'completed' && pairingSession.deviceSerialNumber) {
 			const device = await prisma.device.findUnique({
 				where: { serialNumber: pairingSession.deviceSerialNumber },
 				include: {
@@ -47,20 +46,16 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
 			return json({
 				status: 'completed',
-				device: device
-					? {
-							id: device.id,
-							serialNumber: device.serialNumber,
-							modelName: device.model.name,
-							createdAt: device.createdAt
-					  }
-					: null
+				device: device ? {
+                    id: device.id,
+                    serialNumber: device.serialNumber,
+                    modelName: device.model.name,
+                    createdAt: device.createdAt
+                } : null
 			});
 		}
 
-		return json({
-			status: pairingSession.status.toLowerCase()
-		});
+		return json({ status });
 	} catch (error) {
 		return json({ error: 'Failed to check pairing status' }, { status: 500 });
 	}

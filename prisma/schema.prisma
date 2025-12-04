@@ -8,12 +8,6 @@ generator client {
   binaryTargets = ["native", "windows"]
 }
 
-enum PairingStatus {
-  PENDING
-  COMPLETED
-  EXPIRED
-}
-
 model User {
   id              Int              @id @default(autoincrement())
   email           String           @unique
@@ -54,16 +48,14 @@ model DeviceModel {
 }
 
 model PairingSession {
-  id                 String        @id @default(uuid())
+  id                 String   @id @default(uuid())
   userId             Int
-  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceSerialNumber String
-  status             PairingStatus @default(PENDING)
-  createdAt          DateTime      @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceSerialNumber String?
+  createdAt          DateTime @default(now())
   expiresAt          DateTime
 
   @@index([userId])
-  @@index([status])
 }
 
 model UserModel {

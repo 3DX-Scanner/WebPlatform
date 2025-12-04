@@ -20,7 +20,29 @@
 
     onMount(() => {
         init();
+
+        const socket = new WebSocket('ws://10.134.35.20:7777');
+
+        socket.addEventListener('open', (event) => {
+            console.log('Connected');
+            sendMessage(socket);
+        });
+
+        socket.addEventListener('message', (event) => {
+            console.log(event.data);
+        });
+
+        socket.addEventListener('error', (event) => {
+        });
     });
+
+    function sendMessage(socket: WebSocket) {
+        const message = "hello";
+        if (message) {
+            socket.send(message);
+            console.log('Sent: ' + message);
+        }
+    }
 </script>
 
 <div class="flex flex-col w-screen h-screen">

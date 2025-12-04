@@ -9,7 +9,12 @@
     import {Badge} from "$lib/components/ui/badge";
     import {onDestroy, tick} from "svelte";
 
-    let {open = $bindable()} = $props();
+    interface Props {
+        open: boolean;
+        onPairingCompleted: (device: any) => void;
+    }
+
+    let {open = $bindable(), onPairingCompleted}: Props = $props();
 
     let qrCodeCanvas        = $state<HTMLCanvasElement>();
     let showQrCode          = $state(false);
@@ -122,6 +127,10 @@
 
     function handleClose() {
         open = false;
+
+        if (pairingSuccess) {
+            onPairingCompleted(pairedDevice);
+        }
     }
 </script>
 
@@ -138,11 +147,11 @@
             <div class="flex flex-col gap-4 py-4">
                 <div class="flex items-center gap-4">
                     <Label for="name" class="w-1/3">Nom SSID</Label>
-                    <Input id="name" bind:value={ssid} class="w-2/3 col-span-3"/>
+                    <Input id="name" bind:value={ssid} autocomplete="off" data-1p-ignore data-lpignore="true" class="w-2/3 col-span-3"/>
                 </div>
                 <div class="flex items-center gap-4">
                     <Label for="password" class="w-1/3">Mot de passe</Label>
-                    <Input id="password" bind:value={password} type="password" class="w-2/3 col-span-3"/>
+                    <Input id="password" bind:value={password} type="password" autocomplete="off" data-1p-ignore data-lpignore="true" class="w-2/3 col-span-3"/>
                 </div>
                 {#if error}
                     <div class="text-red-500 text-sm">{error}</div>

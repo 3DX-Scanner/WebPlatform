@@ -49,12 +49,9 @@
     let isLoadingModels = $state(false);
     let loadModelsError = $state('');
 
-    // Optimisé : memoization pour éviter les recalculs inutiles
     let userModelCategories = $state<string[]>([]);
 
     let filteredUserModels = $derived(filterAndSortUserModels(userModels, searchQuery, selectedCategories));
-
-    // Mettre à jour les catégories seulement quand userModels change
     $effect(() => {
         userModelCategories = Array.from(new Set(userModels.map((m) => m.category).filter(Boolean))).sort();
     });
@@ -86,15 +83,13 @@
         rightCardEl.style.height = target + 'px';
     }
 
-    // Optimisé : ne se déclenche que quand selectedSection change, pas à chaque re-render
     $effect(() => {
-        // Seulement synchroniser quand la section change ou au montage
         if (syncHeightTimeout) {
             clearTimeout(syncHeightTimeout);
         }
         syncHeightTimeout = setTimeout(() => {
             syncHeights();
-        }, 50); // Debounce pour éviter les appels trop fréquents
+        }, 50);
     });
 
     async function loadUserModels() {
@@ -116,7 +111,6 @@
         isLoadingModels = false;
     }
 
-    // Cache pour la normalisation
     const normalizeCache = new Map<string, string>();
 
     function normalize(s: string): string {
@@ -130,7 +124,6 @@
     }
 
     function filterAndSortUserModels(list: typeof userModels, search: string, categoryFilters: string[]) {
-        // Si pas de filtre, retourner la liste directement
         if (!search.trim() && categoryFilters.length === 0) {
             return list;
         }
@@ -138,7 +131,6 @@
         const q = normalize(search.trim());
 
         return list.filter(model => {
-            // Optimisation : vérifier d'abord les catégories (plus rapide)
             if (categoryFilters.length > 0) {
                 const matchesCategory = categoryFilters.some(filter => {
                     if (filter === 'public') {
@@ -148,15 +140,12 @@
                     } else if (filter === 'likés') {
                         return model.isLiked === true;
                     }
-                    // Fallback: check if it matches the model's category field
                     return normalize(model.category) === normalize(filter);
                 });
                 if (!matchesCategory) {
                     return false;
                 }
             }
-
-            // Ensuite vérifier la recherche seulement si nécessaire
             if (q === '') {
                 return true;
             }
@@ -213,11 +202,8 @@
 
     onMount(() => {
         syncHeights();
+        loadPairedDevices();
 
-        // Load devices on mount since devices is the default section
-        // loadPairedDevices();
-
-        // Debounce le resize pour éviter trop d'appels
         let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
         const onResize = () => {
             if (resizeTimeout) {
@@ -225,7 +211,7 @@
             }
             resizeTimeout = setTimeout(() => {
                 syncHeights();
-            }, 150); // Debounce de 150ms
+            }, 150);
         };
 
         window.addEventListener('resize', onResize);
@@ -249,7 +235,6 @@
         }
     }
 
-    // Optimisé : ne valider que quand les champs pertinents changent
     $effect(() => {
         if (editingPassword && (newPassword || confirmPassword)) {
             validatePasswords();
@@ -316,6 +301,7 @@
 
     async function loadPairedDevices() {
         isLoadingDevices = true;
+
         try {
             const response = await fetch('/api/user-devices');
             const data = await response.json();
@@ -394,10 +380,8 @@
         return usernameRegex.test(newUsername);
     }
 
-    // Optimisé : ne réinitialiser l'erreur que quand l'utilisateur tape
     $effect(() => {
         if (newUsername && editingUsername && usernameError) {
-            // Réinitialiser seulement les erreurs de validation serveur, pas les erreurs de format
             if (usernameError === 'Ce nom d\'utilisateur est déjà utilisé' || usernameError === 'Erreur réseau') {
                 usernameError = '';
             }
@@ -581,7 +565,7 @@
                             </div>
                         {/if}
 
-                        <Pairing bind:open={showPairingDialog} />
+                        <Pairing bind:open={showPairingDialog} onPairingCompleted={loadPairedDevices} />
 
                         {#if deviceToUnpair !== null}
                             <Dialog.Root open={deviceToUnpair !== null} onOpenChange={(open) => { if (!open) cancelUnpair(); }}>
@@ -650,7 +634,6 @@
                                 {/if}
                             </div>
 
-                            <!-- Mot de passe -->
                             <div class="grid gap-3 mb-4">
                                 {#if !editingPassword}
                                     <div class="grid grid-cols-[220px_1fr] gap-3 items-center">
@@ -782,6 +765,10 @@
                                 {/if}
                             </div>
                         {/if}
+                    </section>
+                {:else if selectedSection === 'storage'}
+                    <section class="mb-4">
+                        <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Mes modèles</h3>
 
                         {#if loadModelsError}
                             <Root>
@@ -834,7 +821,7 @@
                             {/if}
                         {/if}
                     </section>
-                {:else}
+                {:else if selectedSection === 'subscription'}
                     <section class="mb-4">
                         <h3 class="m-0 mb-8 text-center text-2xl font-bold text-card-foreground">Abonnement</h3>
 
@@ -847,15 +834,6 @@
 
 <ChangePasswordModal isOpen={showPwdModal} onclose={() => showPwdModal = false}
                      onsaved={() => { showPwdModal = false; }}/>
-
-<Model3DPopupComponent
-        isOpen={currentPopup.isOpen}
-        title={currentPopup.title}
-        category={currentPopup.category}
-        modelPath={currentPopup.modelPath}
-        onclose={closePopup}
-        ondownload={downloadModel}
-/>
 
 <style>
     .tab-button:not([aria-selected="true"]):hover {

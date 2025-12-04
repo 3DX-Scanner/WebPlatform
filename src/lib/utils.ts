@@ -11,3 +11,14 @@ export type WithoutChild<T> = T extends { child?: any } ? Omit<T, "child"> : T;
 export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, "children"> : T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
+
+export type PairingSessionStatus = 'pending' | 'completed' | 'expired';
+
+export function derivePairingStatus(
+	deviceSerialNumber: string | null,
+	expiresAt: Date
+): PairingSessionStatus {
+	if (deviceSerialNumber !== null) return 'completed';
+	if (new Date() > expiresAt) return 'expired';
+	return 'pending';
+}

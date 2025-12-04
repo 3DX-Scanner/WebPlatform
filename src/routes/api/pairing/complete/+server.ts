@@ -5,7 +5,7 @@ import {prisma} from '$lib/server/prisma';
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const body = await request.json();
-		const { pairingId, deviceSerialNumber, modelId } = body;
+		const { pairingId, deviceSerialNumber } = body;
 
 		if (!pairingId || !deviceSerialNumber) {
 			return json({ error: 'Missing required fields: pairingId and deviceSerialNumber' }, { status: 400 });
@@ -20,14 +20,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		if (new Date() > pairingSession.expiresAt) {
-			await prisma.pairingSession.update({
-				where: { id: pairingId },
-				data: { status: 'EXPIRED' }
-			});
 			return json({ error: 'Pairing session has expired' }, { status: 400 });
 		}
 
-		if (pairingSession.status === 'COMPLETED') {
+		if (pairingSession.deviceSerialNumber !== null) {
 			return json({ error: 'Pairing session already completed' }, { status: 400 });
 		}
 
@@ -35,70 +31,43 @@ export const POST: RequestHandler = async ({ request }) => {
 			where: { serialNumber: deviceSerialNumber }
 		});
 
-		if (!device) {
-			if (!modelId) {
-				return json({ error: 'Device not found and no modelId provided to create new device' }, { status: 400 });
-			}
-
-			const deviceModel = await prisma.deviceModel.findUnique({
-				where: { id: modelId }
-			});
-
-			if (!deviceModel) {
-				return json({ error: 'Device model not found' }, { status: 404 });
-			}
-
-			device = await prisma.device.create({
-				data: {
-					serialNumber: deviceSerialNumber,
-					modelId: modelId
-				}
-			});
-		}
-
-		const existingPairing = await prisma.userDevice.findUnique({
-			where: {
-				userId_deviceId: {
-					userId: pairingSession.userId,
-					deviceId: device.id
-				}
-			}
-		});
-
-		if (!existingPairing) {
-			await prisma.userDevice.create({
-				data: {
-					userId: pairingSession.userId,
-					deviceId: device.id
-				}
-			});
-		}
+        if (!device) {
+            return json({ error: 'Device with the provided serial number not found' }, { status: 404 });
+        }
 
 		await prisma.pairingSession.update({
 			where: { id: pairingId },
 			data: {
-				status: 'COMPLETED',
 				deviceSerialNumber: deviceSerialNumber
 			}
 		});
 
-		const deviceWithModel = await prisma.device.findUnique({
-			where: { id: device.id },
-			include: {
-				model: true
-			}
-		});
+        let existingUserDevice = await prisma.userDevice.findFirst({
+            where: {
+                userId: pairingSession.userId,
+                deviceId: device.id
+            }
+        });
 
-		return json({
-			success: true,
-			device: {
-				id: deviceWithModel!.id,
-				serialNumber: deviceWithModel!.serialNumber,
-				modelName: deviceWithModel!.model.name,
-				createdAt: deviceWithModel!.createdAt
-			}
-		});
+        if (existingUserDevice) {
+            await prisma.userDevice.update({
+                where: { id: existingUserDevice.id },
+                data: {}
+            });
+
+            return json({ message: 'Pairing completed' }, { status: 200 });
+        } else {
+            await prisma.userDevice.create({
+                data: {
+                    userId: pairingSession.userId,
+                    deviceId: device.id
+                }
+            });
+
+            return json({ message: 'Pairing completed' }, { status: 201 });
+        }
 	} catch (error) {
+        console.log(error);
 		return json({ error: 'Failed to complete pairing' }, { status: 500 });
 	}
 };
