@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Button } from '$lib/components/ui/button';
-    import ThreeDViewverComponent from '$lib/components/3DViewver/3DViewverComponent.svelte';
+    import ThreeDViewverComponent from '$lib/components/3DViewer/3DViewerComponent.svelte';
 
     let { 
         isOpen = false, 
