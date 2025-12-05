@@ -29,10 +29,10 @@ export const handle: Handle = async ({ event, resolve }) => {
                 id: number;
                 email: string;
                 username: string;
-                createdAt: Date
+                bucketName: string;
+                createdAt: Date;
             };
 		} catch (err) {
-			console.warn('JWT invalide:', err instanceof Error ? err.message : err);
 			event.locals.user = undefined;
 		}
 	} else {

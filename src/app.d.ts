@@ -5,6 +5,7 @@ declare global {
 				id: number;
 				email: string;
 				username: string;
+                bucketName: string;
 				createdAt: Date;
 			};
 		}
